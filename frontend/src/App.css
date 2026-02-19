@@ -1,0 +1,68 @@
+.app { min-height: 100vh; }
+
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem 2rem;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.layout-header .logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #0ea5e9;
+  text-decoration: none;
+}
+
+.layout-header nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.layout-header nav a {
+  color: #94a3b8;
+  text-decoration: none;
+}
+
+.layout-header nav a:hover { color: #f8fafc; }
+.warehouse-switcher { margin-left: 1rem; padding: 0.25rem 0.5rem; background: #1e293b; color: #94a3b8; border: 1px solid #334155; border-radius: 4px; }
+
+.layout-main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.page h1 { margin-bottom: 0.5rem; }
+.page p { color: #64748b; margin-bottom: 1.5rem; }
+
+.filters { display: flex; gap: 1rem; margin-bottom: 1rem; }
+.filters input, .filters select { padding: 0.5rem 0.75rem; }
+
+.form { max-width: 500px; padding: 1.5rem; background: #f1f5f9; border-radius: 8px; margin-bottom: 1.5rem; }
+.form label { display: block; margin-bottom: 0.75rem; }
+.form input, .form select { margin-left: 0.5rem; padding: 0.375rem; }
+.form h2 { margin-bottom: 1rem; }
+.form h3 { margin: 1rem 0 0.5rem; font-size: 0.9rem; }
+.form button { margin-right: 0.5rem; margin-top: 0.5rem; padding: 0.5rem 1rem; }
+.schema-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+.schema-row input, .schema-row select { flex: 1; min-width: 100px; }
+
+.table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.table th, .table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
+.table th { background: #f8fafc; font-weight: 600; }
+
+button { padding: 0.5rem 1rem; cursor: pointer; background: #0ea5e9; color: white; border: none; border-radius: 4px; }
+button:hover { background: #0284c7; }
+button[type="button"]:not(.cancel) { background: #64748b; }
+button[type="button"]:not(.cancel):hover { background: #475569; }

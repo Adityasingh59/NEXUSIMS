@@ -1,0 +1,22 @@
+# NEXUS IMS — Pre-commit hooks
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        files: ^backend/
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.15.0
+    hooks:
+      - id: eslint
+        files: ^frontend/
+        additional_dependencies:
+          - eslint@^9
+          - eslint-plugin-react-hooks@^7
+          - eslint-plugin-react-refresh@^0.4

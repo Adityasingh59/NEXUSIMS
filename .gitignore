@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.env
+*.env
+*.egg-info/
+
+# Node / Frontend
+node_modules/
+dist/
+.cache/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Logs & DB
+*.log
+*.db
+*.sqlite3
+
+# Large model / cache files
+.ollama/
+.m2/
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# NexusIMS subfolder (nested git repo)
+NexusIMS/
