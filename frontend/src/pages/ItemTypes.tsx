@@ -26,7 +26,7 @@ export function ItemTypes() {
 
   const updateField = (i: number, key: keyof AttributeFieldSchema, value: unknown) => {
     const next = [...schema];
-    (next[i] as Record<string, unknown>)[key] = value;
+    (next[i] as unknown as Record<string, unknown>)[key] = value;
     setSchema(next);
   };
 

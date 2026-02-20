@@ -26,7 +26,13 @@ celery_app.conf.update(
     task_routes={
         "app.tasks.*": {"queue": "default"},
     },
+    include=["app.tasks", "app.tasks.report_tasks"],
 )
 
-# Celery Beat schedule (add tasks here)
-celery_app.conf.beat_schedule = {}
+# Celery Beat schedule
+celery_app.conf.beat_schedule = {
+    "refresh-dashboard-cache-60s": {
+        "task": "app.tasks.report_tasks.refresh_dashboard_cache",
+        "schedule": 60.0,  # every 60 seconds
+    },
+}

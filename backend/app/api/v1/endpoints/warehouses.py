@@ -2,8 +2,9 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import CurrentUser, DbSession, get_db, require_auth, require_permission, PERM_WAREHOUSES_MANAGE
 from app.models.warehouse import Warehouse
 from app.schemas.common import ApiResponse
 from app.schemas.warehouse import WarehouseCreate, WarehouseResponse, WarehouseUpdate
@@ -14,8 +15,8 @@ router = APIRouter()
 
 @router.get("", response_model=ApiResponse[list[WarehouseResponse]])
 async def list_warehouses(
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """List active warehouses."""
     items = await WarehouseService.list_active(db, user.tenant_id)
@@ -25,8 +26,8 @@ async def list_warehouses(
 @router.post("", response_model=ApiResponse[WarehouseResponse], status_code=status.HTTP_201_CREATED)
 async def create_warehouse(
     body: WarehouseCreate,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_WAREHOUSES_MANAGE)),
 ):
     """Create warehouse."""
     # Check code uniqueness per tenant
@@ -53,8 +54,8 @@ async def create_warehouse(
 @router.get("/{id}", response_model=ApiResponse[WarehouseResponse])
 async def get_warehouse(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Get warehouse by ID."""
     wh = await WarehouseService.get_by_id(db, id, user.tenant_id)
@@ -67,8 +68,8 @@ async def get_warehouse(
 async def update_warehouse(
     id: UUID,
     body: WarehouseUpdate,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_WAREHOUSES_MANAGE)),
 ):
     """Update warehouse."""
     wh = await WarehouseService.get_by_id(db, id, user.tenant_id)
@@ -88,8 +89,8 @@ async def update_warehouse(
 @router.get("/{id}/stock", response_model=ApiResponse[list])
 async def get_warehouse_stock(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Get stock summary for warehouse (sku_id, quantity)."""
     wh = await WarehouseService.get_by_id(db, id, user.tenant_id)

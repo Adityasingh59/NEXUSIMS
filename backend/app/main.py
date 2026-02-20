@@ -2,6 +2,7 @@
 NEXUS IMS — FastAPI ASGI Entry Point
 """
 from contextlib import asynccontextmanager
+# Trigger reload
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,6 +43,10 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api/v1")
+
+# WebSocket scanner (outside /api/v1 — WS doesn't use HTTP middleware)
+from app.api.v1.endpoints.scanner import router as ws_scanner_router
+app.include_router(ws_scanner_router)
 
 
 @app.get("/health")

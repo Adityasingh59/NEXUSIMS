@@ -16,7 +16,7 @@ if config.config_file_name is not None:
 settings = get_settings()
 # Use nexus_admin for migrations (DDL); nexus_app for app (restricted)
 migration_url = getattr(settings, "MIGRATION_DATABASE_URL", None) or settings.DATABASE_URL.replace("nexus_app", "nexus_admin")
-url = migration_url.replace("postgresql+asyncpg", "postgresql")
+url = migration_url
 config.set_main_option("sqlalchemy.url", url)
 
 target_metadata = None  # Set in models when using autogenerate

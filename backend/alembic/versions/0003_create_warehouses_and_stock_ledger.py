@@ -18,12 +18,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # event_type enum for stock_ledger
+    # event_type enum for stock_ledger (idempotent)
     op.execute("""
-        CREATE TYPE stock_event_type AS ENUM (
-            'RECEIVE', 'PICK', 'ADJUST', 'RETURN',
-            'TRANSFER_OUT', 'TRANSFER_IN', 'COUNT_CORRECT', 'WRITE_OFF'
-        )
+        DO $$ BEGIN
+            CREATE TYPE stock_event_type AS ENUM (
+                'RECEIVE', 'PICK', 'ADJUST', 'RETURN',
+                'TRANSFER_OUT', 'TRANSFER_IN', 'COUNT_CORRECT', 'WRITE_OFF'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
     """)
 
     # warehouses table (minimal for Block 2; Block 3 adds locations, etc.)
@@ -50,7 +54,7 @@ def upgrade() -> None:
         sa.Column("sku_id", UUID(as_uuid=True), sa.ForeignKey("skus.id", ondelete="RESTRICT"), nullable=False),
         sa.Column("warehouse_id", UUID(as_uuid=True), sa.ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False),
         sa.Column("location_id", UUID(as_uuid=True), nullable=True),  # FK added in Block 3
-        sa.Column("event_type", sa.Enum("RECEIVE", "PICK", "ADJUST", "RETURN", "TRANSFER_OUT", "TRANSFER_IN", "COUNT_CORRECT", "WRITE_OFF", name="stock_event_type", create_type=False), nullable=False),
+        sa.Column("event_type", sa.Text(), nullable=False),
         sa.Column("quantity_delta", NUMERIC(18, 4), nullable=False),
         sa.Column("reference_id", UUID(as_uuid=True), nullable=True),
         sa.Column("actor_id", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),

@@ -5,11 +5,12 @@ POST /auth/login, /auth/refresh, /auth/logout, GET /auth/me
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import DbSession, require_auth, CurrentUser
+from app.api.deps import CurrentUser, get_db, require_auth
 from app.config import get_settings
 from app.core.security import (
     create_access_token,
@@ -48,47 +49,66 @@ class MeResponse(BaseModel):
 # --- Endpoints ---
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    body: LoginRequest,
     response: Response,
-    db: DbSession,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Authenticate with email/password. Returns access token. Sets refresh token in httpOnly cookie."""
-    result = await db.execute(
-        select(User).where(User.email == body.email, User.is_active == True)
-    )
-    user = result.scalar_one_or_none()
-    if not user or not verify_password(body.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    try:
+        # Use SECURITY DEFINER function to bypass RLS for login
+        # RLS prevents nexus_app from seeing users until tenant_id is set, 
+        # but we need to find the user first to get the tenant_id.
+        result = await db.execute(
+            text("SELECT * FROM get_user_for_login(:email)").bindparams(email=form_data.username)
+        )
+        row = result.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+            
+        # Manually map row to User object or just use fields directly
+        # Row has fields: id, tenant_id, email, hashed_password, role, etc.
+        # We need: id, tenant_id, email, hashed_password, role.
+        
+        # Verify password
+        if not verify_password(form_data.password, row.hashed_password):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-    tenant_id = str(user.tenant_id)
-    access_token = create_access_token(
-        subject=str(user.id),
-        tenant_id=tenant_id,
-        email=user.email,
-        extra_claims={"role": user.role},
-    )
-    refresh_token = create_refresh_token(subject=str(user.id))
+        tenant_id = str(row.tenant_id)
+        access_token = create_access_token(
+            subject=str(row.id),
+            tenant_id=tenant_id,
+            email=row.email,
+            extra_claims={"role": row.role},
+        )
+        refresh_token = create_refresh_token(subject=str(row.id))
 
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=settings.ENVIRONMENT == "production",
-        samesite="lax",
-        max_age=settings.JWT_REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
-    )
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            httponly=True,
+            secure=settings.ENVIRONMENT == "production",
+            samesite="lax",
+            max_age=settings.JWT_REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
+        )
 
-    return TokenResponse(
-        access_token=access_token,
-        expires_in=settings.JWT_ACCESS_TOKEN_TTL_MINUTES * 60,
-    )
+        return TokenResponse(
+            access_token=access_token,
+            expires_in=settings.JWT_ACCESS_TOKEN_TTL_MINUTES * 60,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Login error: {str(e)}")
 
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
     request: Request,
     response: Response,
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Exchange refresh token (from cookie) for new access token."""
     token = request.cookies.get("refresh_token")

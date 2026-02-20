@@ -4,8 +4,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import CurrentUser, DbSession, get_db, require_auth
 from app.models.warehouse import StockEventType
 from app.schemas.common import ApiResponse
 from app.services.ledger_service import LedgerService
@@ -31,8 +32,8 @@ class CycleCountCommit(BaseModel):
 @router.post("/submit", response_model=ApiResponse[dict])
 async def submit_cycle_count(
     body: CycleCountSubmit,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Record physical count, return variance (physical - system). No ledger write yet."""
     system = await LedgerService.get_stock_level(db, user.tenant_id, body.sku_id, body.warehouse_id)
@@ -50,8 +51,8 @@ async def submit_cycle_count(
 @router.post("/commit", response_model=ApiResponse[dict])
 async def commit_cycle_count(
     body: CycleCountCommit,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Write COUNT_CORRECT (ADJUST) event after review. quantity_delta = variance."""
     if body.variance == 0:

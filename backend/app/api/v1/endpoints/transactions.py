@@ -3,8 +3,13 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import (
+    CurrentUser, get_db, require_auth, require_permission,
+    PERM_TRANSACTIONS_RECEIVE, PERM_TRANSACTIONS_PICK, PERM_TRANSACTIONS_ADJUST,
+)
 from app.models.warehouse import StockEventType
 from app.schemas.common import ApiResponse, Meta
 from app.schemas.warehouse import AdjustRequest, PickRequest, ReceiveRequest, ReturnRequest
@@ -33,8 +38,8 @@ class LedgerEventResponse(BaseModel):
 @router.post("/receive", response_model=ApiResponse[LedgerEventResponse])
 async def receive(
     body: ReceiveRequest,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_RECEIVE)),
+    db: AsyncSession = Depends(get_db),
 ):
     """Post RECEIVE event (inbound). quantity is positive."""
     try:
@@ -58,8 +63,8 @@ async def receive(
 @router.post("/pick", response_model=ApiResponse[LedgerEventResponse])
 async def pick(
     body: PickRequest,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_PICK)),
+    db: AsyncSession = Depends(get_db),
 ):
     """Post PICK event (outbound). quantity is negative."""
     qty = -abs(body.quantity)
@@ -84,8 +89,8 @@ async def pick(
 @router.post("/adjust", response_model=ApiResponse[LedgerEventResponse])
 async def adjust(
     body: AdjustRequest,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_ADJUST)),
+    db: AsyncSession = Depends(get_db),
 ):
     """Post ADJUST event. quantity can be positive or negative. Requires reason_code."""
     try:
@@ -109,8 +114,8 @@ async def adjust(
 @router.post("/return", response_model=ApiResponse[LedgerEventResponse])
 async def return_event(
     body: ReturnRequest,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_RECEIVE)),
+    db: AsyncSession = Depends(get_db),
 ):
     """Post RETURN event (inbound). quantity positive."""
     try:
@@ -135,7 +140,7 @@ async def get_stock(
     sku_id: UUID,
     warehouse_id: UUID,
     user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    db: AsyncSession = Depends(get_db),
 ):
     """Get current stock level for SKU at warehouse (Redis cache-aside)."""
     level = await LedgerService.get_stock_level(db, user.tenant_id, sku_id, warehouse_id)
@@ -150,7 +155,7 @@ async def list_transactions(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession = Depends(),
+    db: AsyncSession = Depends(get_db),
 ):
     """List transaction history with running balance."""
     rows, total = await LedgerService.get_transaction_history(

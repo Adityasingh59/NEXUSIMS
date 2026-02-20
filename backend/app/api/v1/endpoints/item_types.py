@@ -2,8 +2,9 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import CurrentUser, DbSession, get_db, require_auth, require_permission, PERM_SKUS_WRITE
 from app.schemas.common import ApiResponse, Meta
 from app.schemas.item_type import ItemTypeCreate, ItemTypeResponse, ItemTypeUpdate
 from app.services.item_type_service import ItemTypeService
@@ -13,9 +14,9 @@ router = APIRouter()
 
 @router.get("", response_model=ApiResponse[list[ItemTypeResponse]])
 async def list_item_types(
+    db: AsyncSession = Depends(get_db),
     include_archived: bool = False,
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """List item types. Requires ADMIN role (Block 4)."""
     items = await ItemTypeService.get_item_types(db, user.tenant_id, include_archived)
@@ -25,8 +26,8 @@ async def list_item_types(
 @router.post("", response_model=ApiResponse[ItemTypeResponse], status_code=status.HTTP_201_CREATED)
 async def create_item_type(
     body: ItemTypeCreate,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_SKUS_WRITE)),
 ):
     """Create item type. Requires ADMIN."""
     existing = await ItemTypeService.get_by_code(db, user.tenant_id, body.code)
@@ -41,8 +42,8 @@ async def create_item_type(
 @router.get("/{id}", response_model=ApiResponse[ItemTypeResponse])
 async def get_item_type(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Get item type by ID."""
     item = await ItemTypeService.get_by_id(db, id, user.tenant_id)
@@ -55,8 +56,8 @@ async def get_item_type(
 async def update_item_type(
     id: UUID,
     body: ItemTypeUpdate,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_SKUS_WRITE)),
 ):
     """Update item type. If attribute_schema provided, creates new version."""
     item = await ItemTypeService.get_by_id(db, id, user.tenant_id)
@@ -75,8 +76,8 @@ async def update_item_type(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def archive_item_type(
     id: UUID,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_SKUS_WRITE)),
 ):
     """Soft-archive item type."""
     ok = await ItemTypeService.archive_item_type(db, id, user.tenant_id)

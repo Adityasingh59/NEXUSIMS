@@ -16,9 +16,20 @@ export interface ApiResponse<T> {
   meta?: { page: number; page_size: number; total_count?: number };
 }
 
+export function listWarehouses() {
+  return apiClient.get<ApiResponse<Warehouse[]>>('/warehouses');
+}
+
+export function getWarehouse(id: string) {
+  return apiClient.get<ApiResponse<Warehouse>>(`/warehouses/${id}`);
+}
+
+export function createWarehouse(data: { name: string; code: string; address?: string; timezone?: string }) {
+  return apiClient.post<ApiResponse<Warehouse>>('/warehouses', data);
+}
+
 export const warehousesApi = {
-  list: () => apiClient.get<ApiResponse<Warehouse[]>>('/warehouses'),
-  get: (id: string) => apiClient.get<ApiResponse<Warehouse>>(`/warehouses/${id}`),
-  create: (data: { name: string; code: string; address?: string; timezone?: string }) =>
-    apiClient.post<ApiResponse<Warehouse>>('/warehouses', data),
+  list: listWarehouses,
+  get: getWarehouse,
+  create: createWarehouse,
 };

@@ -2,8 +2,9 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import CurrentUser, DbSession, get_db, require_auth
 from app.schemas.common import ApiResponse, Meta
 from app.schemas.sku import SKUCreate, SKUResponse, SKUUpdate
 from app.services.attribute_validator import AttributeValidationError
@@ -14,6 +15,7 @@ router = APIRouter()
 
 @router.get("", response_model=ApiResponse[list[SKUResponse]])
 async def list_skus(
+    db: AsyncSession = Depends(get_db),
     item_type_id: UUID | None = None,
     search: str | None = None,
     low_stock: bool | None = None,
@@ -21,7 +23,6 @@ async def list_skus(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """List SKUs with filters."""
     items, total = await SKUService.get_skus(
@@ -43,8 +44,8 @@ async def list_skus(
 @router.post("", response_model=ApiResponse[SKUResponse], status_code=status.HTTP_201_CREATED)
 async def create_sku(
     body: SKUCreate,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Create SKU. Validates attributes against item_type.attribute_schema."""
     existing = await SKUService.get_by_code(db, user.tenant_id, body.sku_code)
@@ -71,8 +72,8 @@ async def create_sku(
 @router.get("/{id}", response_model=ApiResponse[SKUResponse])
 async def get_sku(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Get SKU by ID."""
     sku = await SKUService.get_by_id(db, id, user.tenant_id)
@@ -85,8 +86,8 @@ async def get_sku(
 async def update_sku(
     id: UUID,
     body: SKUUpdate,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Update SKU."""
     try:
@@ -111,9 +112,9 @@ async def update_sku(
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def archive_sku(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     force: bool = False,
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Soft-archive SKU. Blocked if stock > 0 unless force (Block 2)."""
     ok = await SKUService.archive_sku(db, id, user.tenant_id, force=force)

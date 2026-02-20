@@ -18,9 +18,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # location_type enum
-    op.execute("CREATE TYPE location_type_enum AS ENUM ('ZONE', 'AISLE', 'BIN')")
-    op.execute("CREATE TYPE transfer_status_enum AS ENUM ('PENDING', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED')")
+    # location_type enum and transfer_status enum (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE location_type_enum AS ENUM ('ZONE', 'AISLE', 'BIN');
+        EXCEPTION WHEN duplicate_object THEN null; END $$;
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE transfer_status_enum AS ENUM ('PENDING', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED');
+        EXCEPTION WHEN duplicate_object THEN null; END $$;
+    """)
 
     # locations table (zone > aisle > bin hierarchy)
     op.create_table(
@@ -31,7 +39,7 @@ def upgrade() -> None:
         sa.Column("parent_id", UUID(as_uuid=True), nullable=True),  # self-FK added after table creation
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("code", sa.String(100), nullable=False),
-        sa.Column("location_type", sa.Enum("ZONE", "AISLE", "BIN", name="location_type_enum", create_type=False), nullable=False),
+        sa.Column("location_type", sa.Text(), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
@@ -51,7 +59,7 @@ def upgrade() -> None:
         sa.Column("tenant_id", UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
         sa.Column("from_warehouse_id", UUID(as_uuid=True), sa.ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False),
         sa.Column("to_warehouse_id", UUID(as_uuid=True), sa.ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False),
-        sa.Column("status", sa.Enum("PENDING", "IN_TRANSIT", "RECEIVED", "CANCELLED", name="transfer_status_enum", create_type=False), nullable=False, server_default="PENDING"),
+        sa.Column("status", sa.Text(), nullable=False, server_default="PENDING"),
         sa.Column("created_by", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("received_at", sa.DateTime(timezone=True), nullable=True),

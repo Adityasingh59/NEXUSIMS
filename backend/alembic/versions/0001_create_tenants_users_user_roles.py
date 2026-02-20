@@ -22,8 +22,14 @@ def upgrade() -> None:
     op.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
     op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
 
-    # Create user_role enum
-    op.execute("CREATE TYPE user_role_enum AS ENUM ('ADMIN', 'MANAGER', 'FLOOR_ASSOCIATE')")
+    # Create user_role enum (idempotent)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE user_role_enum AS ENUM ('ADMIN', 'MANAGER', 'FLOOR_ASSOCIATE');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
 
     # tenants table
     op.create_table(
@@ -44,7 +50,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(255), nullable=False),
         sa.Column("hashed_password", sa.String(255), nullable=False),
         sa.Column("full_name", sa.String(255), nullable=True),
-        sa.Column("role", sa.Enum("ADMIN", "MANAGER", "FLOOR_ASSOCIATE", name="user_role_enum", create_type=False), nullable=False, server_default="FLOOR_ASSOCIATE"),
+        sa.Column("role", sa.Text(), nullable=False, server_default="FLOOR_ASSOCIATE"),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),

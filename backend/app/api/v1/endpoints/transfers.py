@@ -2,8 +2,12 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import (
+    CurrentUser, DbSession, get_db, require_permission,
+    PERM_WAREHOUSES_MANAGE, PERM_TRANSACTIONS_RECEIVE,
+)
 from app.schemas.common import ApiResponse
 from app.schemas.location import TransferCreate, TransferReceiveRequest, TransferResponse, TransferLineResponse
 from app.services.transfer_service import TransferService
@@ -14,8 +18,8 @@ router = APIRouter()
 @router.post("", response_model=ApiResponse[TransferResponse], status_code=status.HTTP_201_CREATED)
 async def create_transfer(
     body: TransferCreate,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_WAREHOUSES_MANAGE)),
 ):
     """Create transfer order. Posts TRANSFER_OUT on source immediately."""
     if not body.lines:
@@ -42,10 +46,10 @@ async def create_transfer(
 
 @router.get("", response_model=ApiResponse[list])
 async def list_transfers(
+    db: AsyncSession = Depends(get_db),
     status: str | None = Query(None, description="PENDING|IN_TRANSIT|RECEIVED|CANCELLED"),
     warehouse_id: UUID | None = None,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_RECEIVE)),
 ):
     """List transfer orders."""
     orders = await TransferService.list_transfers(db, user.tenant_id, status=status, warehouse_id=warehouse_id)
@@ -68,8 +72,8 @@ async def list_transfers(
 async def receive_transfer(
     id: UUID,
     body: TransferReceiveRequest,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_TRANSACTIONS_RECEIVE)),
 ):
     """Confirm receipt. Posts TRANSFER_IN on destination. Can be partial."""
     line_qty: dict | None = None
@@ -85,8 +89,8 @@ async def receive_transfer(
 @router.post("/{id}/cancel", response_model=ApiResponse[dict])
 async def cancel_transfer(
     id: UUID,
-    user: CurrentUser = Depends(require_auth),
-    db: DbSession,
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_permission(PERM_WAREHOUSES_MANAGE)),
 ):
     """Cancel transfer. Reverses TRANSFER_OUT by posting TRANSFER_IN on source."""
     order = await TransferService.cancel_transfer_order(db, id, user.tenant_id)

@@ -2,8 +2,9 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import CurrentUser, DbSession, require_auth
+from app.api.deps import CurrentUser, DbSession, get_db, require_auth
 from app.schemas.common import ApiResponse
 from app.schemas.location import LocationCreate, LocationResponse
 from app.services.location_service import LocationService
@@ -15,10 +16,10 @@ router = APIRouter()
 @router.get("", response_model=ApiResponse[list[LocationResponse]])
 async def list_locations(
     warehouse_id: UUID,
+    db: AsyncSession = Depends(get_db),
     parent_id: UUID | None = Query(None, description="Filter by parent; omit for root"),
     include_inactive: bool = False,
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """List locations for warehouse (optionally by parent for hierarchy)."""
     items = await LocationService.list_by_warehouse(
@@ -32,8 +33,8 @@ async def list_locations(
 @router.post("", response_model=ApiResponse[LocationResponse], status_code=status.HTTP_201_CREATED)
 async def create_location(
     body: LocationCreate,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Create location (zone/aisle/bin)."""
     wh = await WarehouseService.get_by_id(db, body.warehouse_id, user.tenant_id)
@@ -58,8 +59,8 @@ async def create_location(
 @router.get("/{id}/path", response_model=ApiResponse[list[str]])
 async def get_location_path(
     id: UUID,
+    db: AsyncSession = Depends(get_db),
     user: CurrentUser = Depends(require_auth),
-    db: DbSession,
 ):
     """Get full path (Zone > Aisle > Bin) for location."""
     path = await LocationService.get_location_path(db, id, user.tenant_id)

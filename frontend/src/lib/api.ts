@@ -1,7 +1,8 @@
 /**
  * NEXUS IMS — API client (Axios + React Query)
  */
-import axios, { AxiosInstance } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '/api/v1';
 
