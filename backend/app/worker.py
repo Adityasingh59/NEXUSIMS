@@ -26,7 +26,12 @@ celery_app.conf.update(
     task_routes={
         "app.tasks.*": {"queue": "default"},
     },
-    include=["app.tasks", "app.tasks.report_tasks"],
+    include=[
+        "app.tasks", 
+        "app.tasks.report_tasks",
+        "app.tasks.workflow_tasks",
+        "app.tasks.webhook_tasks"
+    ],
 )
 
 # Celery Beat schedule

@@ -7,8 +7,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.config import get_settings
 from app.core.auth_middleware import JWTAuthMiddleware
+from app.core.rate_limit import RateLimitMiddleware
 
 settings = get_settings()
 from app.api.v1.router import api_router
@@ -32,7 +32,7 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
 )
-
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(JWTAuthMiddleware)
 app.add_middleware(
     CORSMiddleware,

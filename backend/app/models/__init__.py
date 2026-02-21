@@ -7,6 +7,8 @@ from app.models.rbac import APIKey, AuditLog, InvitationToken
 from app.models.tenant import Tenant, User, UserRole
 from app.models.warehouse import StockEventType, StockLedger, Warehouse
 from app.models.sales_order import SalesOrder, SalesOrderLine
+from app.models.workflow import Workflow, WorkflowAction, WorkflowExecution, TriggerType, ActionType, ExecutionStatus
+from app.models.webhook import Webhook, WebhookDelivery
 
 __all__ = [
     "Tenant", "User", "UserRole",
@@ -17,4 +19,6 @@ __all__ = [
     "BOM", "BOMLine",
     "PurchaseOrder", "PurchaseOrderLine", "POStatus",
     "SalesOrder", "SalesOrderLine",
+    "Workflow", "WorkflowAction", "WorkflowExecution", "TriggerType", "ActionType", "ExecutionStatus",
+    "Webhook", "WebhookDelivery",
 ]

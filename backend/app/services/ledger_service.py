@@ -82,6 +82,19 @@ class LedgerService:
         r = await get_redis()
         await r.delete(stock_cache_key(str(tenant_id), str(sku_id), str(warehouse_id)))
 
+        # Block 9: Evaluate Workflows automatically
+        from app.services.workflow_engine import WorkflowEngine
+        payload = {
+            "event_id": str(ev.id),
+            "sku_id": str(ev.sku_id),
+            "warehouse_id": str(ev.warehouse_id),
+            "quantity_delta": float(ev.quantity_delta),
+            "quantity": float(new_balance),
+            "notes": ev.notes,
+            "reason": ev.reason_code
+        }
+        await WorkflowEngine.evaluate(db, str(tenant_id), ev.event_type, payload)
+
         return ev
 
     @staticmethod

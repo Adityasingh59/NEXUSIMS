@@ -18,6 +18,8 @@ from app.api.v1.endpoints import (
     transfers,
     users,
     warehouses,
+    workflows,
+    webhooks,
     sales_orders,
 )
 
@@ -40,3 +42,5 @@ api_router.include_router(cogs.router, prefix="/cogs", tags=["cogs"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(scan.router, prefix="/scan", tags=["scanner"])
 api_router.include_router(sales_orders.router, prefix="/sales-orders", tags=["sales-orders"])
+api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
+api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
