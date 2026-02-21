@@ -1,187 +1,262 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { bomsApi, type BOM } from '../api/boms';
+import { getBOMs, createBOM, checkBOMAvailability } from '../api/assembly';
 import { skusApi, type SKU } from '../api/skus';
 
-type LineForm = { component_sku_id: string; quantity: number; unit_cost_snapshot: number };
+type LineForm = { uuid: string; component_sku_id: string; quantity: number; unit: string };
 
 export function Boms() {
+    const queryClient = useQueryClient();
     const [showCreate, setShowCreate] = useState(false);
-    const [editingBom, setEditingBom] = useState<BOM | null>(null);
-    const [explodeBom, setExplodeBom] = useState<BOM | null>(null);
-    const [explodeQty, setExplodeQty] = useState(1);
-    const [explodeResult, setExplodeResult] = useState<Record<string, number> | null>(null);
     const [includeInactive, setIncludeInactive] = useState(false);
 
     // Form state
-    const [formSkuId, setFormSkuId] = useState('');
-    const [formName, setFormName] = useState('');
-    const [formLines, setFormLines] = useState<LineForm[]>([{ component_sku_id: '', quantity: 1, unit_cost_snapshot: 0 }]);
+    const [formFinishedSkuId, setFormFinishedSkuId] = useState('');
+    const [formLandedCost, setFormLandedCost] = useState<number>(0);
+    const [formLandedCostDesc, setFormLandedCostDesc] = useState('');
+    const [formLines, setFormLines] = useState<LineForm[]>([{ uuid: Math.random().toString(), component_sku_id: '', quantity: 1, unit: '' }]);
 
-    const { data: bomsData, refetch } = useQuery({
+    // Availability Check State
+    const [checkBomId, setCheckBomId] = useState<string | null>(null);
+    const [checkQty, setCheckQty] = useState<number>(1);
+    const [availabilityResult, setAvailabilityResult] = useState<any | null>(null);
+
+    const { data: bomsData, isLoading: bomsLoading } = useQuery({
         queryKey: ['boms', includeInactive],
-        queryFn: async () => { const r = await bomsApi.list({ include_inactive: includeInactive }); return r.data?.data ?? []; },
+        queryFn: async () => await getBOMs({ include_inactive: includeInactive }),
     });
+
     const { data: skusData } = useQuery({
         queryKey: ['skus'],
         queryFn: async () => { const r = await skusApi.list(); return r.data?.data ?? []; },
     });
 
-    const boms = (bomsData ?? []) as BOM[];
+    const boms = bomsData?.data ?? [];
     const skus = (skusData ?? []) as SKU[];
 
-    const resetForm = () => {
-        setFormSkuId(''); setFormName('');
-        setFormLines([{ component_sku_id: '', quantity: 1, unit_cost_snapshot: 0 }]);
-        setShowCreate(false); setEditingBom(null);
-    };
+    const createMutation = useMutation({
+        mutationFn: createBOM,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['boms'] });
+            resetForm();
+        },
+        onError: (err) => {
+            console.error("Failed to create BOM", err);
+            alert("Error creating BOM");
+        }
+    });
 
-    const openEdit = (bom: BOM) => {
-        setEditingBom(bom);
-        setFormSkuId(bom.sku_id);
-        setFormName(bom.name);
-        setFormLines(bom.lines.map(l => ({ component_sku_id: l.component_sku_id, quantity: Number(l.quantity), unit_cost_snapshot: Number(l.unit_cost_snapshot) })));
+    const resetForm = () => {
+        setFormFinishedSkuId('');
+        setFormLandedCost(0);
+        setFormLandedCostDesc('');
+        setFormLines([{ uuid: Math.random().toString(), component_sku_id: '', quantity: 1, unit: '' }]);
         setShowCreate(false);
     };
 
-    const openCreate = () => { resetForm(); setShowCreate(true); };
-
-    const addLine = () => setFormLines([...formLines, { component_sku_id: '', quantity: 1, unit_cost_snapshot: 0 }]);
+    const addLine = () => setFormLines([...formLines, { uuid: Math.random().toString(), component_sku_id: '', quantity: 1, unit: '' }]);
     const removeLine = (i: number) => setFormLines(formLines.filter((_, idx) => idx !== i));
     const updateLine = (i: number, key: keyof LineForm, value: string | number) => {
         const next = [...formLines];
-        (next[i] as Record<string, unknown>)[key] = key === 'component_sku_id' ? value : Number(value);
+        (next[i] as any)[key] = value;
         setFormLines(next);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const validLines = formLines.filter(l => l.component_sku_id && l.quantity > 0);
-        if (validLines.length === 0) return;
-        try {
-            if (editingBom) {
-                await bomsApi.update(editingBom.id, { name: formName, lines: validLines });
-            } else {
-                await bomsApi.create({ sku_id: formSkuId, name: formName, lines: validLines });
-            }
-            resetForm();
-            refetch();
-        } catch (err) { console.error(err); }
+        if (validLines.length === 0 || !formFinishedSkuId) {
+            alert("Please select a finished SKU and add at least one valid component line.");
+            return;
+        }
+
+        const payload = {
+            finished_sku_id: formFinishedSkuId,
+            landed_cost: formLandedCost,
+            landed_cost_description: formLandedCostDesc || null,
+            lines: validLines.map(l => ({
+                component_sku_id: l.component_sku_id,
+                quantity: l.quantity,
+                unit: l.unit || null
+            }))
+        };
+
+        createMutation.mutate(payload);
     };
 
-    const handleArchive = async (id: string) => {
-        try { await bomsApi.archive(id); refetch(); } catch (err) { console.error(err); }
-    };
-
-    const handleExplode = async () => {
-        if (!explodeBom) return;
+    const handleCheckAvailability = async () => {
+        if (!checkBomId || checkQty <= 0) return;
         try {
-            const r = await bomsApi.explode(explodeBom.id, explodeQty);
-            setExplodeResult(r.data?.data?.components ?? {});
-        } catch (err) { console.error(err); }
+            const result = await checkBOMAvailability(checkBomId, checkQty);
+            setAvailabilityResult(result);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to check availability");
+        }
     };
 
     const skuCode = (id: string) => skus.find(s => s.id === id)?.sku_code ?? id.slice(0, 8) + '…';
+    const skuName = (id: string) => skus.find(s => s.id === id)?.name ?? 'Unknown SKU';
 
     return (
         <div className="page boms">
-            <h1>Bill of Materials</h1>
-            <p>Define component recipes for finished SKUs. Used for COGS calculation and production planning.</p>
+            <h1>Bills of Materials</h1>
+            <p>Define assembly recipes for finished goods. Creating a new BOM for an existing SKU will version it.</p>
 
             <div className="filters" style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
-                <button onClick={openCreate}>+ New BOM</button>
+                <button onClick={() => setShowCreate(true)} className="btn primary">+ New BOM</button>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input type="checkbox" checked={includeInactive} onChange={e => { setIncludeInactive(e.target.checked); }} />
-                    Show archived
+                    <input type="checkbox" checked={includeInactive} onChange={e => setIncludeInactive(e.target.checked)} />
+                    Show historical versions
                 </label>
             </div>
 
-            {(showCreate || editingBom) && (
-                <form onSubmit={handleSubmit} className="form">
-                    <h2>{editingBom ? 'Edit BOM' : 'Create BOM'}</h2>
-                    {!editingBom && (
-                        <label>Finished SKU
-                            <select value={formSkuId} onChange={e => setFormSkuId(e.target.value)} required>
-                                <option value="">Select SKU…</option>
-                                {skus.map(s => <option key={s.id} value={s.id}>{s.sku_code} — {s.name}</option>)}
+            {showCreate && (
+                <form onSubmit={handleSubmit} className="form" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <h2 style={{ marginTop: 0 }}>Create BOM Version</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+                        <div>
+                            <label>Finished SKU</label>
+                            <select value={formFinishedSkuId} onChange={e => setFormFinishedSkuId(e.target.value)} required>
+                                <option value="">Select SKU...</option>
+                                {skus.map(s => <option key={s.id} value={s.id}>{s.sku_code} - {s.name}</option>)}
                             </select>
-                        </label>
-                    )}
-                    <label>BOM Name
-                        <input value={formName} onChange={e => setFormName(e.target.value)} required maxLength={255} placeholder="e.g. Standard Recipe v1" />
-                    </label>
-                    <h3>Component Lines</h3>
+                        </div>
+                        <div>
+                            <label>Fixed Landed Cost (Overhead)</label>
+                            <input type="number" step="0.01" min="0" value={formLandedCost} onChange={e => setFormLandedCost(Number(e.target.value))} />
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                            <label>Landed Cost Description</label>
+                            <input type="text" placeholder="e.g. Labor and machinery overhead per run" value={formLandedCostDesc} onChange={e => setFormLandedCostDesc(e.target.value)} />
+                        </div>
+                    </div>
+
+                    <h3>Components</h3>
                     {formLines.map((line, i) => (
-                        <div key={i} className="schema-row">
-                            <select value={line.component_sku_id} onChange={e => updateLine(i, 'component_sku_id', e.target.value)} required>
-                                <option value="">Component SKU…</option>
-                                {skus.map(s => <option key={s.id} value={s.id}>{s.sku_code}</option>)}
-                            </select>
-                            <input type="number" value={line.quantity || ''} onChange={e => updateLine(i, 'quantity', e.target.value)} placeholder="Qty/unit" required min="0.0001" step="0.0001" style={{ width: '90px' }} />
-                            <input type="number" value={line.unit_cost_snapshot || ''} onChange={e => updateLine(i, 'unit_cost_snapshot', e.target.value)} placeholder="Unit cost ($)" required min="0" step="0.01" style={{ width: '120px' }} />
-                            <button type="button" onClick={() => removeLine(i)} disabled={formLines.length === 1}>Remove</button>
+                        <div key={line.uuid} style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', alignItems: 'flex-end', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                            <div style={{ flex: 2 }}>
+                                <label>Component SKU</label>
+                                <select value={line.component_sku_id} onChange={e => updateLine(i, 'component_sku_id', e.target.value)} required>
+                                    <option value="">Select Component...</option>
+                                    {skus.filter(s => s.id !== formFinishedSkuId).map(s => <option key={s.id} value={s.id}>{s.sku_code} - {s.name}</option>)}
+                                </select>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label>Qty / Finished Unit</label>
+                                <input type="number" step="0.0001" min="0.0001" value={line.quantity} onChange={e => updateLine(i, 'quantity', Number(e.target.value))} required />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <label>Unit</label>
+                                <input type="text" placeholder="e.g. kg, pcs" value={line.unit || ''} onChange={e => updateLine(i, 'unit', e.target.value)} />
+                            </div>
+                            {formLines.length > 1 && (
+                                <button type="button" onClick={() => removeLine(i)} className="btn danger" style={{ padding: '0.5rem 1rem', marginBottom: '4px' }}>X</button>
+                            )}
                         </div>
                     ))}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <button type="button" onClick={addLine}>+ Add Component</button>
-                        <button type="submit">{editingBom ? 'Save Changes' : 'Create BOM'}</button>
-                        <button type="button" onClick={resetForm}>Cancel</button>
+                    <button type="button" onClick={addLine} className="btn outline" style={{ marginTop: '0.5rem' }}>+ Add Component</button>
+
+                    <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+                        <button type="submit" className="btn primary" disabled={createMutation.isPending}>
+                            {createMutation.isPending ? 'Saving...' : 'Save BOM'}
+                        </button>
+                        <button type="button" onClick={resetForm} className="btn text">Cancel</button>
                     </div>
                 </form>
             )}
 
-            {explodeBom && (
-                <div className="form" style={{ marginTop: '1rem' }}>
-                    <h2>Explode BOM: {explodeBom.name}</h2>
-                    <label>Production Quantity
-                        <input type="number" value={explodeQty} onChange={e => setExplodeQty(Number(e.target.value))} min="0.01" step="0.01" style={{ width: '100px', marginLeft: '0.5rem' }} />
-                    </label>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                        <button onClick={handleExplode}>Calculate</button>
-                        <button onClick={() => { setExplodeBom(null); setExplodeResult(null); }}>Close</button>
-                    </div>
-                    {explodeResult && (
-                        <table className="table" style={{ marginTop: '0.5rem' }}>
-                            <thead><tr><th>Component SKU</th><th>Total Quantity Needed</th></tr></thead>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '2rem' }}>
+                <div className="table-container">
+                    {bomsLoading ? (
+                        <p>Loading BOMs...</p>
+                    ) : (
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Finished SKU</th>
+                                    <th>Version</th>
+                                    <th>Status</th>
+                                    <th>Components</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                {Object.entries(explodeResult).map(([skuId, qty]) => (
-                                    <tr key={skuId}><td>{skuCode(skuId)}</td><td>{Number(qty).toFixed(4)}</td></tr>
+                                {boms.map(bom => (
+                                    <tr key={bom.id} style={{ opacity: bom.is_active ? 1 : 0.6 }}>
+                                        <td><strong>{skuCode(bom.finished_sku_id)}</strong><br /><small>{skuName(bom.finished_sku_id)}</small></td>
+                                        <td>v{bom.version}</td>
+                                        <td>
+                                            <span style={{
+                                                padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem',
+                                                background: bom.is_active ? 'rgba(76, 175, 80, 0.1)' : 'rgba(158, 158, 158, 0.1)',
+                                                color: bom.is_active ? '#4CAF50' : '#9E9E9E'
+                                            }}>
+                                                {bom.is_active ? 'Active' : 'Historical'}
+                                            </span>
+                                        </td>
+                                        <td>{bom.lines.length} lines</td>
+                                        <td>
+                                            {bom.is_active && (
+                                                <button onClick={() => { setCheckBomId(bom.id); setAvailabilityResult(null); }} className="btn outline sm">
+                                                    Check Stock
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
                                 ))}
+                                {boms.length === 0 && (
+                                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem' }}>No BOMs defined yet.</td></tr>
+                                )}
                             </tbody>
                         </table>
                     )}
                 </div>
-            )}
 
-            <table className="table" style={{ marginTop: '1rem' }}>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Finished SKU</th>
-                        <th>Components</th>
-                        <th>Status</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {boms.map(bom => (
-                        <tr key={bom.id} style={{ opacity: bom.is_active ? 1 : 0.5 }}>
-                            <td>{bom.name}</td>
-                            <td>{skuCode(bom.sku_id)}</td>
-                            <td>{bom.lines.length} component{bom.lines.length !== 1 ? 's' : ''}</td>
-                            <td>{bom.is_active ? '✅ Active' : '🗃️ Archived'}</td>
-                            <td>{bom.created_at ? new Date(bom.created_at).toLocaleDateString() : '—'}</td>
-                            <td>
-                                <button type="button" onClick={() => openEdit(bom)} disabled={!bom.is_active} style={{ marginRight: '0.25rem' }}>Edit</button>
-                                <button type="button" onClick={() => { setExplodeBom(bom); setExplodeResult(null); }} style={{ marginRight: '0.25rem' }}>Explode</button>
-                                {bom.is_active && <button type="button" onClick={() => handleArchive(bom.id)}>Archive</button>}
-                            </td>
-                        </tr>
-                    ))}
-                    {boms.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#888' }}>No BOMs found. Create one above.</td></tr>}
-                </tbody>
-            </table>
+                <div className="availability-panel" style={{ padding: '1.5rem', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
+                    <h3 style={{ marginTop: 0 }}>Availability Checker</h3>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-color)', opacity: 0.8 }}>Select an active BOM to simulate production capacity and identify component shortages.</p>
+
+                    {checkBomId && (
+                        <div style={{ marginTop: '1.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.85rem' }}>Target Yield Qty:</label>
+                                    <input type="number" min="1" value={checkQty} onChange={e => setCheckQty(Number(e.target.value))} style={{ width: '100%' }} />
+                                </div>
+                                <button onClick={handleCheckAvailability} className="btn primary">Check</button>
+                            </div>
+
+                            {availabilityResult && (
+                                <div style={{
+                                    marginTop: '1.5rem', padding: '1rem', borderRadius: '8px',
+                                    border: `1px solid ${availabilityResult.is_available ? '#4CAF50' : '#f44336'}`,
+                                    background: availabilityResult.is_available ? 'rgba(76, 175, 80, 0.05)' : 'rgba(244, 67, 54, 0.05)'
+                                }}>
+                                    <h4 style={{ color: availabilityResult.is_available ? '#4CAF50' : '#f44336', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {availabilityResult.is_available ? '✅ Ready to Assemble' : '❌ Stock Shortage'}
+                                    </h4>
+
+                                    {!availabilityResult.is_available && Object.keys(availabilityResult.shortages).length > 0 && (
+                                        <div style={{ display: 'grid', gap: '0.5rem' }}>
+                                            {Object.entries(availabilityResult.shortages).map(([skuId, data]: [string, any]) => (
+                                                <div key={skuId} style={{ padding: '0.75rem', background: 'var(--surface-color)', borderRadius: '4px', borderLeft: '3px solid #f44336', fontSize: '0.9rem' }}>
+                                                    <strong>{skuCode(skuId)}</strong> ({skuName(skuId)})
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', opacity: 0.8 }}>
+                                                        <span>Required: {data.required}</span>
+                                                        <span>Have: {data.available}</span>
+                                                        <span style={{ color: '#f44336', fontWeight: 600 }}>Short: {data.shortage}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

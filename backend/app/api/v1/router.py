@@ -5,6 +5,7 @@ from app.api.v1.endpoints import (
     api_keys,
     auth,
     boms,
+    assembly_orders,
     cogs,
     cycle_counts,
     item_types,
@@ -32,6 +33,7 @@ api_router.include_router(transfers.router, prefix="/transfers", tags=["transfer
 api_router.include_router(transactions.router, prefix="/transactions", tags=["transactions"])
 api_router.include_router(cycle_counts.router, prefix="/cycle-counts", tags=["cycle-counts"])
 api_router.include_router(boms.router, prefix="/boms", tags=["boms"])
+api_router.include_router(assembly_orders.router, prefix="/assembly-orders", tags=["assembly-orders"])
 api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tags=["purchase-orders"])
 api_router.include_router(cogs.router, prefix="/cogs", tags=["cogs"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])

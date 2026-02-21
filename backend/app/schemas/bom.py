@@ -1,4 +1,4 @@
-"""NEXUS IMS — BOM schemas (Block 5)."""
+"""NEXUS IMS — BOM schemas (Block 7)."""
 from decimal import Decimal
 from uuid import UUID
 
@@ -8,25 +8,21 @@ from pydantic import BaseModel, Field
 class BOMLineCreate(BaseModel):
     component_sku_id: UUID
     quantity: Decimal = Field(..., gt=0, description="Quantity of component per finished unit")
-    unit_cost_snapshot: Decimal = Field(..., ge=0, description="Cost per component unit")
+    unit: str | None = Field(None, max_length=50)
 
 
 class BOMCreate(BaseModel):
-    sku_id: UUID
-    name: str = Field(..., min_length=1, max_length=255)
+    finished_sku_id: UUID
+    landed_cost: Decimal = Field(Decimal("0"), ge=0, description="Fixed overhead cost for BOM")
+    landed_cost_description: str | None = Field(None, max_length=255)
     lines: list[BOMLineCreate] = Field(..., min_length=1)
-
-
-class BOMUpdate(BaseModel):
-    name: str | None = Field(None, max_length=255)
-    lines: list[BOMLineCreate] | None = None
 
 
 class BOMLineResponse(BaseModel):
     id: UUID
     component_sku_id: UUID
     quantity: Decimal
-    unit_cost_snapshot: Decimal
+    unit: str | None
 
     class Config:
         from_attributes = True
@@ -34,9 +30,11 @@ class BOMLineResponse(BaseModel):
 
 class BOMResponse(BaseModel):
     id: UUID
-    sku_id: UUID
-    name: str
+    finished_sku_id: UUID
+    version: int
     is_active: bool
+    landed_cost: Decimal
+    landed_cost_description: str | None
     lines: list[BOMLineResponse]
     created_at: str
 
@@ -44,7 +42,6 @@ class BOMResponse(BaseModel):
         from_attributes = True
 
 
-class ExplodeResponse(BaseModel):
-    bom_id: UUID
-    quantity: Decimal
-    components: dict[str, Decimal]  # component_sku_id (str) → total_quantity
+class BOMAvailabilityResponse(BaseModel):
+    is_available: bool
+    shortages: dict[UUID, dict] # component_sku_id -> {required, available, shortage}

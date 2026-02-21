@@ -134,3 +134,47 @@ cd frontend && npm run lint
 - [x] API: GET/POST /locations, GET /locations/{id}/path
 - [x] API: POST /transfers, GET /transfers, POST /transfers/{id}/receive, POST /transfers/{id}/cancel
 - [x] Frontend: Locations hierarchy builder, Transfer order flow, Warehouse context switcher
+
+## Block 4 Checklist — User Roles & RBAC
+
+- [x] `roles` table (id, name, permissions JSONB)
+- [x] `user_roles` mapping table
+- [x] Auth middleware checking permissions array
+- [x] `api_keys` table for programmatic access
+- [x] `audit_logs` table (user_id, action, entity, entity_id, changes JSONB)
+- [x] API: GET/POST `/users`, GET/POST/DELETE `/api-keys`
+- [x] Frontend: Users & API Keys dashboards
+
+## Block 5 Checklist — Barcode Scanning MVP
+
+- [x] `scan_lookup(barcode, warehouse)` API unifying SKU & UUID lookup
+- [x] `scan_receive` / `scan_pick` endpoints for quick stock movements
+- [x] `scan_adjust` endpoint with reason codes
+- [x] Frontend: Dedicated Scanner UI dashboard with Receive/Pick/Adjust modes
+- [x] Success/Error overlays and enter-to-submit workflow
+
+## Block 6 Checklist — Reporting & Dashboards
+
+- [x] `cogs_service` calculating generic inventory value via last-known unit cost
+- [x] Dashboard API: `total_stock_value`, `low_stock_count`, `recent_activity`
+- [x] Live Inventory Valuation report query
+- [x] Operations/Movement History query
+- [x] Frontend: Dashboard metrics view and comprehensive Reports page
+
+## Block 7 Checklist — Assembly & Kitting (BOM Engine)
+
+- [x] `boms` and `bom_lines` tables (with versioning, landed cost)
+- [x] `assembly_orders` table (planned, produced, waste)
+- [x] `stock_ledger` ENUM expanded (`ASSEMBLE_OUT`, `ASSEMBLE_IN`)
+- [x] `AssemblyService` (create_bom, check_availability, start, complete order)
+- [x] COGS recorded dynamically based on components + BOM overhead
+- [x] API: `/boms`, `/assembly-orders`
+- [x] Frontend: BOMs builder, stock availability simulator, Assembly execution dashboard
+
+## Block 8 Checklist — Order Fulfillment & Shipping
+
+- [ ] `sales_orders` and `sales_order_lines` tables
+- [ ] `stock_ledger` ENUM expanded (`SHIP_OUT`, `RESERVE_OUT`, `RESERVE_IN`)
+- [ ] `FulfillmentService` (allocate_stock, ship_order)
+- [ ] API: `/sales-orders`
+- [ ] Frontend: SalesOrders dashboard with soft-allocation and physical shipping flows

@@ -7,6 +7,7 @@ import { Transactions } from './pages/Transactions';
 import { Transfers } from './pages/Transfers';
 import { Warehouses } from './pages/Warehouses';
 import { Boms } from './pages/Boms';
+import { AssemblyOrders } from './pages/AssemblyOrders';
 import { PurchaseOrders } from './pages/PurchaseOrders';
 import { Dashboard } from './pages/Dashboard';
 import { Reports } from './pages/Reports';
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="transfers" element={<Transfers />} />
           <Route path="transactions" element={<Transactions />} />
           <Route path="boms" element={<Boms />} />
+          <Route path="assembly-orders" element={<AssemblyOrders />} />
           <Route path="purchase-orders" element={<PurchaseOrders />} />
           <Route path="users" element={<Users />} />
           <Route path="api-keys" element={<ApiKeys />} />

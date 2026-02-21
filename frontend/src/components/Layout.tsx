@@ -24,6 +24,7 @@ const NAV = [
       { to: '/locations', icon: '⊡', label: 'Locations' },
       { to: '/transfers', icon: '⇄', label: 'Transfers' },
       { to: '/boms', icon: '⊟', label: 'BOMs' },
+      { to: '/assembly-orders', icon: '⚙', label: 'Assembly Orders' },
       { to: '/purchase-orders', icon: '◧', label: 'Purchase Orders' },
     ]
   },
