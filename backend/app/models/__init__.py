@@ -6,6 +6,7 @@ from app.models.purchase_order import POStatus, PurchaseOrder, PurchaseOrderLine
 from app.models.rbac import APIKey, AuditLog, InvitationToken
 from app.models.tenant import Tenant, User, UserRole
 from app.models.warehouse import StockEventType, StockLedger, Warehouse
+from app.models.sales_order import SalesOrder, SalesOrderLine
 
 __all__ = [
     "Tenant", "User", "UserRole",
@@ -15,4 +16,5 @@ __all__ = [
     "InvitationToken", "APIKey", "AuditLog",
     "BOM", "BOMLine",
     "PurchaseOrder", "PurchaseOrderLine", "POStatus",
+    "SalesOrder", "SalesOrderLine",
 ]

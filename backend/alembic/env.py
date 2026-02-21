@@ -19,7 +19,10 @@ migration_url = getattr(settings, "MIGRATION_DATABASE_URL", None) or settings.DA
 url = migration_url
 config.set_main_option("sqlalchemy.url", url)
 
-target_metadata = None  # Set in models when using autogenerate
+from app.db.base import Base
+import app.models  # Ensure all models are loaded
+
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     transfers,
     users,
     warehouses,
+    sales_orders,
 )
 
 api_router = APIRouter()
@@ -38,3 +39,4 @@ api_router.include_router(purchase_orders.router, prefix="/purchase-orders", tag
 api_router.include_router(cogs.router, prefix="/cogs", tags=["cogs"])
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
 api_router.include_router(scan.router, prefix="/scan", tags=["scanner"])
+api_router.include_router(sales_orders.router, prefix="/sales-orders", tags=["sales-orders"])

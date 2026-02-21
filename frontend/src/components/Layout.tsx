@@ -24,7 +24,8 @@ const NAV = [
       { to: '/locations', icon: '⊡', label: 'Locations' },
       { to: '/transfers', icon: '⇄', label: 'Transfers' },
       { to: '/boms', icon: '⊟', label: 'BOMs' },
-      { to: '/assembly-orders', icon: '⚙', label: 'Assembly Orders' },
+      { to: '/assembly-orders', icon: '⚙', label: 'Assembly' },
+      { to: '/sales-orders', icon: '↗', label: 'Outbound Orders' },
       { to: '/purchase-orders', icon: '◧', label: 'Purchase Orders' },
     ]
   },
@@ -43,7 +44,11 @@ export function Layout() {
   const logout = useAuthStore((s) => s.logout);
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses'],
-    queryFn: () => warehousesApi.list().then((r: any) => r.data?.data ?? r.data),
+    queryFn: () => warehousesApi.list().then((r: any) => {
+      // Handle both cases: r is Axios response or raw ApiResponse
+      const responseBody = r.data || r;
+      return Array.isArray(responseBody.data) ? responseBody.data : (Array.isArray(responseBody) ? responseBody : []);
+    }),
   });
 
   // Scanner uses its own layout

@@ -20,6 +20,11 @@ class StockEventType(str, Enum):
     TRANSFER_IN = "TRANSFER_IN"
     COUNT_CORRECT = "COUNT_CORRECT"
     WRITE_OFF = "WRITE_OFF"
+    ASSEMBLE_OUT = "ASSEMBLE_OUT"
+    ASSEMBLE_IN = "ASSEMBLE_IN"
+    SHIP_OUT = "SHIP_OUT"
+    RESERVE_OUT = "RESERVE_OUT"
+    RESERVE_IN = "RESERVE_IN"
 
 
 class Warehouse(Base):
