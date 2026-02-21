@@ -173,8 +173,8 @@ cd frontend && npm run lint
 
 ## Block 8 Checklist — Order Fulfillment & Shipping
 
-- [ ] `sales_orders` and `sales_order_lines` tables
-- [ ] `stock_ledger` ENUM expanded (`SHIP_OUT`, `RESERVE_OUT`, `RESERVE_IN`)
-- [ ] `FulfillmentService` (allocate_stock, ship_order)
-- [ ] API: `/sales-orders`
-- [ ] Frontend: SalesOrders dashboard with soft-allocation and physical shipping flows
+- [x] `sales_orders` and `sales_order_lines` tables
+- [x] `stock_ledger` ENUM expanded (`SHIP_OUT`, `RESERVE_OUT`, `RESERVE_IN`)
+- [x] `FulfillmentService` (allocate_stock, ship_order)
+- [x] API: `/sales-orders`
+- [x] Frontend: SalesOrders dashboard with soft-allocation and physical shipping flows
