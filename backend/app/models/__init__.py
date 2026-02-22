@@ -9,6 +9,8 @@ from app.models.warehouse import StockEventType, StockLedger, Warehouse
 from app.models.sales_order import SalesOrder, SalesOrderLine
 from app.models.workflow import Workflow, WorkflowAction, WorkflowExecution, TriggerType, ActionType, ExecutionStatus
 from app.models.webhook import Webhook, WebhookDelivery
+from app.models.module import ModuleInstall, ModuleAttributeType, ModuleWorkflowExtension, ModuleExtensionType
+from app.models.serial import SerialNumber, SerialStatus
 
 __all__ = [
     "Tenant", "User", "UserRole",
@@ -21,4 +23,6 @@ __all__ = [
     "SalesOrder", "SalesOrderLine",
     "Workflow", "WorkflowAction", "WorkflowExecution", "TriggerType", "ActionType", "ExecutionStatus",
     "Webhook", "WebhookDelivery",
+    "ModuleInstall", "ModuleAttributeType", "ModuleWorkflowExtension", "ModuleExtensionType",
+    "SerialNumber", "SerialStatus",
 ]

@@ -85,7 +85,7 @@ export function Users() {
                         <h3 className="modal-title">Invite New User</h3>
                         {devToken ? (
                             <div>
-                                <p style={{ color: "var(--success)" }}>✓ Invitation created!</p>
+                                <p style={{ color: "var(--color-green)" }}>✓ Invitation created!</p>
                                 <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "8px 0" }}>
                                     (Dev mode) Invite link:
                                 </p>

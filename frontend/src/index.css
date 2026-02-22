@@ -11,55 +11,56 @@
 }
 
 :root {
-  --bg: #0f1115;
-  --surface: #1a1d24;
-  --surface-hover: #22262d;
-  --border: #2a2f3a;
-  --border-light: #343a46;
-  
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: rgba(79, 70, 229, 0.15);
-  --primary-glow: rgba(79, 70, 229, 0.4);
-  
-  --text: #f8f9fa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.1);
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.1);
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --info: #3b82f6;
-  
-  --sidebar-bg: #0b0c10;
-  --sidebar-text: #a1a1aa;
-  --sidebar-active: rgba(79, 70, 229, 0.15);
-  
+  /* ── Structural ─────────────────── */
+  --color-ink: #060A0F;
+  --color-surface: #111A24;
+  --color-surface-2: #192638;
+  --color-edge: #1E3048;
+  --color-edge-2: #2A4560;
+
+  /* ── Signal ─────────────────────── */
+  --color-blue: #0EA7E8;
+  --color-blue-dark: #0B6FA0;
+  --color-amber: #F5A623;
+  --color-green: #00C48C;
+  --color-red: #FF4757;
+
+  /* ── Content / Text ─────────────── */
+  --color-white: #EEF4FA;
+  --color-mist: #C8D8E8;
+  --color-slate: #94A9BE;
+
+  --sidebar-bg: rgba(11, 12, 16, 0.7);
+  --sidebar-text: var(--color-slate);
+  --sidebar-active: rgba(14, 167, 232, 0.15);
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 15px var(--primary-glow);
-  
+  --shadow-glow: 0 0 15px rgba(14, 167, 232, 0.4);
+
   --radius: 10px;
   --radius-sm: 6px;
   --radius-lg: 16px;
   --radius-full: 9999px;
-  
+
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  
+
   font-family: 'Outfit', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
+  color: var(--color-white);
+  background: var(--color-ink);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-size: 13px;
+  /* Slightly reduce base UI scale for high-DPI displays */
 }
 
 html,
@@ -70,7 +71,7 @@ body,
 }
 
 ::selection {
-  background: var(--primary);
+  background: var(--color-blue);
   color: white;
 }
 
@@ -80,18 +81,23 @@ body {
 }
 
 a {
-  color: var(--primary);
+  color: var(--color-blue);
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--primary-hover);
+  color: var(--color-blue-dark);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Outfit', sans-serif;
-  color: var(--text);
+  color: var(--color-white);
   margin-bottom: 0.5em;
 }
 
@@ -117,11 +123,11 @@ select,
 textarea {
   font-family: 'Outfit', sans-serif;
   font-size: 0.9rem;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-edge);
   border-radius: var(--radius-sm);
   padding: 0.6rem 0.85rem;
-  background: var(--surface);
-  color: var(--text);
+  background: var(--color-surface);
+  color: var(--color-white);
   transition: all var(--transition-normal);
   outline: none;
   box-shadow: var(--shadow-xs);
@@ -129,20 +135,20 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--text-muted);
+  color: var(--color-slate);
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--primary);
+  border-color: var(--color-blue);
   box-shadow: 0 0 0 3px var(--primary-light), var(--shadow-sm);
-  background: var(--surface-hover);
+  background: var(--color-surface-2);
 }
 
 input:hover,
 select:hover {
-  border-color: var(--border-light);
+  border-color: var(--color-edge-2);
 }
 
 button {
@@ -158,59 +164,84 @@ button {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: var(--primary);
-  color: #fff;
+  background: var(--color-blue);
+  color: var(--color-ink);
   box-shadow: var(--shadow-sm);
   letter-spacing: 0.01em;
 }
 
 button:hover {
-  background: var(--primary-hover);
+  background: var(--color-blue-dark);
   box-shadow: var(--shadow-md), var(--shadow-glow);
   transform: translateY(-1px);
 }
 
 button:active {
+  background: var(--color-blue-dark);
   transform: translateY(1px) scale(0.98);
   box-shadow: var(--shadow-xs);
 }
 
 button:disabled {
-  opacity: 0.6;
+  opacity: 1;
+  background: var(--color-surface);
+  color: var(--color-edge-2);
+  border: 1px solid var(--color-edge);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Secondary Button Variant */
+/* Secondary / Ghost Button Variant */
 button.secondary {
-  background: var(--surface);
-  color: var(--text);
-  border-color: var(--border);
-  box-shadow: var(--shadow-xs);
+  background: transparent;
+  color: var(--color-blue);
+  border: 1px solid var(--color-blue);
+  box-shadow: none;
 }
 
 button.secondary:hover {
-  background: var(--surface-hover);
-  border-color: var(--border-light);
-  box-shadow: var(--shadow-sm);
-  color: white;
+  background: var(--color-surface-2);
+  border-color: var(--color-blue-dark);
+}
+
+/* Outline Button Variant */
+button.outline {
+  background: transparent;
+  color: var(--color-mist);
+  border: 1px solid var(--color-edge-2);
+}
+
+button.outline:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue);
 }
 
 /* Danger Button Variant */
 button.danger {
-  background: var(--danger);
+  background: var(--color-red);
+  color: var(--color-white);
 }
 
 button.danger:hover {
-  background: #b91c1c;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  background: #A02030;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+}
+
+/* Warning Button Variant */
+button.warning {
+  background: var(--color-amber);
+  color: var(--color-ink);
+}
+
+button.warning:hover {
+  background: #A0681A;
 }
 
 /* Base Card Styles */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--color-surface);
+  border: 1px solid var(--color-edge);
   border-radius: var(--radius);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
@@ -218,7 +249,7 @@ button.danger:hover {
 }
 
 .card:hover {
-  border-color: var(--border-light);
+  border-color: var(--color-edge-2);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
@@ -239,33 +270,33 @@ button.danger:hover {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: var(--surface-hover);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
+  background: var(--color-surface-2);
+  color: var(--color-mist);
+  border: 1px solid var(--color-edge);
 }
 
 .badge.success {
-  background: var(--success-bg);
-  color: var(--success);
-  border-color: rgba(16, 185, 129, 0.2);
+  background: rgba(0, 196, 140, 0.08);
+  color: var(--color-green);
+  border-color: rgba(0, 196, 140, 0.4);
 }
 
 .badge.warning {
-  background: var(--warning-bg);
-  color: var(--warning);
-  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 166, 35, 0.08);
+  color: var(--color-amber);
+  border-color: rgba(245, 166, 35, 0.4);
 }
 
 .badge.danger {
-  background: var(--danger-bg);
-  color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(255, 71, 87, 0.08);
+  color: var(--color-red);
+  border-color: rgba(255, 71, 87, 0.4);
 }
 
 .badge.info {
-  background: var(--primary-light);
-  color: var(--primary);
-  border-color: rgba(79, 70, 229, 0.2);
+  background: rgba(14, 167, 232, 0.08);
+  color: var(--color-blue);
+  border-color: rgba(14, 167, 232, 0.4);
 }
 
 /* Scrollbar styling */
@@ -275,16 +306,16 @@ button.danger:hover {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: var(--color-ink);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--color-edge);
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-light);
+  background: var(--color-edge-2);
 }
 
 /* Scale-in animation class */
@@ -297,6 +328,7 @@ button.danger:hover {
     opacity: 0;
     transform: scale(0.97) translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);

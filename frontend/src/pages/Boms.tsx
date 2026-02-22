@@ -112,7 +112,7 @@ export function Boms() {
             </div>
 
             {showCreate && (
-                <form onSubmit={handleSubmit} className="form" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <form onSubmit={handleSubmit} className="form" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-edge)' }}>
                     <h2 style={{ marginTop: 0 }}>Create BOM Version</h2>
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
@@ -134,7 +134,7 @@ export function Boms() {
 
                     <h3>Components</h3>
                     {formLines.map((line, i) => (
-                        <div key={line.uuid} style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', alignItems: 'flex-end', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>
+                        <div key={line.uuid} style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', alignItems: 'flex-end', borderBottom: '1px solid var(--color-edge)', paddingBottom: '0.5rem' }}>
                             <div style={{ flex: 2 }}>
                                 <label>Component SKU</label>
                                 <select value={line.component_sku_id} onChange={e => updateLine(i, 'component_sku_id', e.target.value)} required>
@@ -213,9 +213,9 @@ export function Boms() {
                     )}
                 </div>
 
-                <div className="availability-panel" style={{ padding: '1.5rem', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)', height: 'fit-content' }}>
+                <div className="availability-panel" style={{ padding: '1.5rem', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-edge)', height: 'fit-content' }}>
                     <h3 style={{ marginTop: 0 }}>Availability Checker</h3>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-color)', opacity: 0.8 }}>Select an active BOM to simulate production capacity and identify component shortages.</p>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-white)', opacity: 0.8 }}>Select an active BOM to simulate production capacity and identify component shortages.</p>
 
                     {checkBomId && (
                         <div style={{ marginTop: '1.5rem' }}>
@@ -240,7 +240,7 @@ export function Boms() {
                                     {!availabilityResult.is_available && Object.keys(availabilityResult.shortages).length > 0 && (
                                         <div style={{ display: 'grid', gap: '0.5rem' }}>
                                             {Object.entries(availabilityResult.shortages).map(([skuId, data]: [string, any]) => (
-                                                <div key={skuId} style={{ padding: '0.75rem', background: 'var(--surface-color)', borderRadius: '4px', borderLeft: '3px solid #f44336', fontSize: '0.9rem' }}>
+                                                <div key={skuId} style={{ padding: '0.75rem', background: 'var(--color-surface)', borderRadius: '4px', borderLeft: '3px solid #f44336', fontSize: '0.9rem' }}>
                                                     <strong>{skuCode(skuId)}</strong> ({skuName(skuId)})
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', opacity: 0.8 }}>
                                                         <span>Required: {data.required}</span>

@@ -16,11 +16,11 @@ export function Reports() {
                 <p>Inventory analytics and insights</p>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--color-edge)', paddingBottom: '0.5rem' }}>
                 {(['valuation', 'low-stock', 'movement'] as Tab[]).map(t => (
                     <button key={t} onClick={() => setTab(t)}
                         className={tab === t ? '' : 'btn-ghost'}
-                        style={tab === t ? {} : { background: 'transparent', color: 'var(--text-secondary)' }}>
+                        style={tab === t ? {} : { background: 'transparent', color: 'var(--color-mist)' }}>
                         {t === 'valuation' ? 'Stock Valuation' : t === 'low-stock' ? 'Low Stock' : 'Movement History'}
                     </button>
                 ))}
@@ -101,7 +101,7 @@ function LowStockTab() {
                                 <span className={`badge ${r.current_stock === 0 ? 'badge-danger' : 'badge-warning'}`}>{r.current_stock}</span>
                             </td>
                             <td style={{ textAlign: 'right' }}>{r.reorder_point}</td>
-                            <td style={{ textAlign: 'right', color: 'var(--danger)', fontWeight: 600 }}>-{r.deficit}</td>
+                            <td style={{ textAlign: 'right', color: 'var(--color-red)', fontWeight: 600 }}>-{r.deficit}</td>
                         </tr>
                     ))}
                 </tbody>

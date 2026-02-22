@@ -23,6 +23,7 @@ PERM_WORKFLOWS_WRITE = "workflows:write"
 PERM_BOMS_MANAGE = "boms:manage"
 PERM_COGS_READ = "cogs:read"
 PERM_API_KEYS_MANAGE = "api_keys:manage"
+PERM_MODULES_MANAGE = "modules:manage"
 
 # ── Role → permissions matrix ────────────────────────────────────────────────
 _ADMIN_PERMS = {
@@ -35,6 +36,7 @@ _ADMIN_PERMS = {
     PERM_BOMS_MANAGE,
     PERM_COGS_READ,
     PERM_API_KEYS_MANAGE,
+    PERM_MODULES_MANAGE,
 }
 
 _MANAGER_PERMS = {

@@ -185,7 +185,7 @@ export function Scanner() {
                             <input type="number" value={quantity} onChange={e => setQuantity(e.target.value)}
                                 placeholder="Qty" min="0" step="1" />
                             <button onClick={handleConfirm} disabled={isProcessing}
-                                style={{ background: mode === 'PICK' ? '#d97706' : mode === 'ADJUST' ? '#6366f1' : 'var(--success)' }}>
+                                style={{ background: mode === 'PICK' ? '#d97706' : mode === 'ADJUST' ? '#6366f1' : 'var(--color-green)' }}>
                                 {isProcessing ? '...' : `Confirm ${mode}`}
                             </button>
                         </div>

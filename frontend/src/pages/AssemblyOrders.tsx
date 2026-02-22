@@ -140,9 +140,9 @@ export function AssemblyOrders() {
             </div>
 
             {showCreate && (
-                <form onSubmit={handleStartSubmit} className="form" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--surface-color)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <form onSubmit={handleStartSubmit} className="form" style={{ marginBottom: '2rem', padding: '1.5rem', background: 'var(--color-surface)', borderRadius: '8px', border: '1px solid var(--color-edge)' }}>
                     <h2 style={{ marginTop: 0 }}>Start Assembly Order</h2>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-color)', opacity: 0.8 }}>Starting an order will immediately reserve (deduct) the required components from stock.</p>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--color-white)', opacity: 0.8 }}>Starting an order will immediately reserve (deduct) the required components from stock.</p>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                         <div>
@@ -180,7 +180,7 @@ export function AssemblyOrders() {
 
             {completingOrderId && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <form onSubmit={handleCompleteSubmit} className="form modal" style={{ background: 'var(--bg-color)', padding: '2rem', borderRadius: '8px', minWidth: '400px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <form onSubmit={handleCompleteSubmit} className="form modal" style={{ background: 'var(--color-ink)', padding: '2rem', borderRadius: '8px', minWidth: '400px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
                         <h2 style={{ marginTop: 0 }}>Complete Assembly</h2>
                         <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>Registering finished goods into stock. Enter actual yield and waste.</p>
 

@@ -1,0 +1,92 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.12.6, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Aditya\AppData\Local\Programs\Python\Python312\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Aditya\Desktop\NYU Academics\Spring Sem\Inventory Management System\backend
+configfile: pyproject.toml
+plugins: anyio-4.12.1
+collecting ... collected 1 item
+
+tests/api/v1/endpoints/test_modules.py::test_install_and_uninstall_module ERROR [100%]
+
+=================================== ERRORS ====================================
+_____________ ERROR at setup of test_install_and_uninstall_module _____________
+file C:\Users\Aditya\Desktop\NYU Academics\Spring Sem\Inventory Management System\backend\tests\api\v1\endpoints\test_modules.py, line 41
+  @pytest.mark.asyncio
+  async def test_install_and_uninstall_module(
+      async_client: AsyncClient,
+      admin_token_headers: dict[str, str],
+      db_session: AsyncSession,
+      test_tenant: Tenant,
+      test_module_manifest: dict,
+  ):
+      """Test full lifecycle of a module: install, list, verify db, and uninstall."""
+
+      # 1. Install Module
+      install_payload = {
+          "manifest": test_module_manifest,
+          "granted_permissions": ["ledger:write", "sku:read"],
+          "module_class_path": "app.modules.test_module.TestExpiryModule"
+      }
+
+      response = await async_client.post(
+          "/api/v1/modules/install",
+          headers=admin_token_headers,
+          json=install_payload
+      )
+      assert response.status_code == 200, response.text
+      data = response.json()
+      assert data["module_slug"] == "test-expiry"
+      assert data["is_active"] is True
+      assert "ledger:write" in data["permissions_granted"]
+
+      # 2. Verify Database records created
+      # ModuleInstall
+      stmt = select(ModuleInstall).where(ModuleInstall.module_slug == "test-expiry")
+      result = await db_session.execute(stmt)
+      db_install = result.scalars().first()
+      assert db_install is not None
+      assert db_install.tenant_id == test_tenant.id
+
+      # ModuleAttributeType
+      attr_stmt = select(ModuleAttributeType).where(ModuleAttributeType.module_slug == "test-expiry")
+      attr_result = await db_session.execute(attr_stmt)
+      db_attr = attr_result.scalars().first()
+      assert db_attr is not None
+      assert db_attr.key == "expiry_date"
+      assert db_attr.schema_def["type"] == "date"
+
+      # 3. List Installed Modules
+      list_resp = await async_client.get("/api/v1/modules", headers=admin_token_headers)
+      assert list_resp.status_code == 200
+      list_data = list_resp.json()
+      assert len(list_data) >= 1
+      assert any(m["module_slug"] == "test-expiry" for m in list_data)
+
+      # 4. Uninstall Module
+      uninstall_resp = await async_client.post(
+          "/api/v1/modules/test-expiry/uninstall",
+          headers=admin_token_headers,
+          params={"module_class_path": "app.modules.test_module.TestExpiryModule"}
+      )
+      assert uninstall_resp.status_code == 204
+
+      # 5. Verify Database Records Cleaned Up
+      result2 = await db_session.execute(select(ModuleInstall).where(ModuleInstall.module_slug == "test-expiry"))
+      assert result2.scalars().first() is None
+
+      attr_result2 = await db_session.execute(select(ModuleAttributeType).where(ModuleAttributeType.module_slug == "test-expiry"))
+      assert attr_result2.scalars().first() is None
+E       fixture 'async_client' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, test_module_manifest, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+C:\Users\Aditya\Desktop\NYU Academics\Spring Sem\Inventory Management System\backend\tests\api\v1\endpoints\test_modules.py:41
+============================== warnings summary ===============================
+tests\api\v1\endpoints\test_modules.py:41
+  C:\Users\Aditya\Desktop\NYU Academics\Spring Sem\Inventory Management System\backend\tests\api\v1\endpoints\test_modules.py:41: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR tests/api/v1/endpoints/test_modules.py::test_install_and_uninstall_module
+========================= 1 warning, 1 error in 2.80s =========================

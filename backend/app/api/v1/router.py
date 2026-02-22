@@ -21,6 +21,9 @@ from app.api.v1.endpoints import (
     workflows,
     webhooks,
     sales_orders,
+    modules,
+    module_serials,
+    module_expiry,
 )
 
 api_router = APIRouter()
@@ -44,3 +47,6 @@ api_router.include_router(scan.router, prefix="/scan", tags=["scanner"])
 api_router.include_router(sales_orders.router, prefix="/sales-orders", tags=["sales-orders"])
 api_router.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 api_router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
+api_router.include_router(modules.router, prefix="/modules", tags=["modules"])
+api_router.include_router(module_serials.router, prefix="/modules/serial-numbers", tags=["module_serial_numbers"])
+api_router.include_router(module_expiry.router, prefix="/modules/expiry-tracker", tags=["module_expiry_tracker"])

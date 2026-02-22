@@ -62,7 +62,7 @@ export function Dashboard() {
                                 <span className="truncate" style={{ flex: 1 }}>
                                     <strong>{a.sku_code}</strong> · {a.sku_name}
                                 </span>
-                                <span className="mono" style={{ color: Number(a.quantity_delta) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                <span className="mono" style={{ color: Number(a.quantity_delta) >= 0 ? 'var(--color-green)' : 'var(--color-red)' }}>
                                     {Number(a.quantity_delta) >= 0 ? '+' : ''}{a.quantity_delta}
                                 </span>
                                 <span className="text-xs text-muted">{a.warehouse_code}</span>
@@ -77,7 +77,7 @@ export function Dashboard() {
                         <div className="empty-state"><h3>All stock levels healthy</h3></div>
                     ) : (
                         lowStock?.slice(0, 8).map((s: any) => (
-                            <div key={s.sku_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0', borderBottom: '1px solid var(--border-light)', fontSize: '0.8125rem' }}>
+                            <div key={s.sku_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0', borderBottom: '1px solid var(--color-edge-2)', fontSize: '0.8125rem' }}>
                                 <div>
                                     <strong>{s.sku_code}</strong>
                                     <div className="text-xs text-muted">{s.sku_name}</div>
