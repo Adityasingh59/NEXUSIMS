@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
 
     # Database (nexus_app for app; nexus_admin for migrations)
-    DATABASE_URL: str = "postgresql+asyncpg://nexus_app:nexus_dev_password@localhost:5432/nexus_ims"
+    DATABASE_URL: str
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/1"
