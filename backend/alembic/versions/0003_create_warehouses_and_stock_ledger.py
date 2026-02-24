@@ -93,9 +93,9 @@ def upgrade() -> None:
     """)
 
     # REVOKE UPDATE, DELETE on stock_ledger from nexus_app (INSERT-only)
-  #  op.execute("REVOKE UPDATE ON stock_ledger FROM nexus_app")
-    op.execute("REVOKE DELETE ON stock_ledger FROM nexus_app")
-    op.execute("GRANT INSERT, SELECT ON stock_ledger TO nexus_app")
+  # op.execute("REVOKE UPDATE ON stock_ledger FROM nexus_app")
+   # op.execute("REVOKE DELETE ON stock_ledger FROM nexus_app")
+    #op.execute("GRANT INSERT, SELECT ON stock_ledger TO nexus_app")
 
     # RLS on warehouses and stock_ledger
     op.execute("ALTER TABLE warehouses ENABLE ROW LEVEL SECURITY")
