@@ -3,11 +3,11 @@ import asyncpg
 import os
 
 # Connect as superuser (postgres)
-PG_USER = "postgres"
-PG_PASS = "Aditya@0509"
-PG_HOST = "localhost"
+PG_USER = os.getenv("DB_USER", "nexus_admin")
+PG_PASS = os.getenv("DB_PASSWORD", "nexus_dev_password")
+PG_HOST = os.getenv("DB_HOST", "postgres")
 PG_PORT = "5432"
-TARGET_DB = "nexus_ims"
+TARGET_DB = os.getenv("DB_NAME", "nexus_ims")
 
 # Use nexus_admin (who owns tables) for the function owner so it has access
 FUNCTION_OWNER = "nexus_admin" 

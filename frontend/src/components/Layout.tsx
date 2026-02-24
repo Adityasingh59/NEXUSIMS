@@ -26,6 +26,7 @@ const NAV = [
       { to: '/boms', icon: '⊟', label: 'BOMs' },
       { to: '/assembly-orders', icon: '⚙', label: 'Assembly' },
       { to: '/sales-orders', icon: '↗', label: 'Outbound Orders' },
+      { to: '/returns', icon: '↩', label: 'Returns (RMA)' },
       { to: '/purchase-orders', icon: '◧', label: 'Purchase Orders' },
     ]
   },
@@ -33,6 +34,7 @@ const NAV = [
     section: 'Settings', items: [
       { to: '/users', icon: '◉', label: 'Users' },
       { to: '/api-keys', icon: '⊙', label: 'API Keys' },
+      { to: '/webhooks', icon: '🔗', label: 'Webhooks' },
     ]
   },
 ];

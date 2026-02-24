@@ -24,6 +24,9 @@ class ReportService:
         tenant_id: UUID,
     ) -> dict:
         """KPI payload: total SKUs, stock value, low-stock count, pending transfers, recent tx count."""
+        from app.models.tenant import Tenant
+        tenant = (await db.execute(select(Tenant).where(Tenant.id == tenant_id))).scalar_one_or_none()
+        base_currency = tenant.base_currency if tenant else "USD"
         # Total active SKUs
         total_skus = (await db.execute(
             select(func.count(SKU.id)).where(SKU.tenant_id == tenant_id, SKU.is_archived == False)
@@ -81,7 +84,6 @@ class ReportService:
             )
         )).scalar_one()
 
-        # Active warehouses
         active_warehouses = (await db.execute(
             select(func.count(Warehouse.id)).where(
                 Warehouse.tenant_id == tenant_id,
@@ -89,9 +91,24 @@ class ReportService:
             )
         )).scalar_one()
 
+        total_stock_value = float(total_stock_value or 0)
+        currency_symbol = "$"
+        if base_currency != "USD":
+            r = await get_redis()
+            rates_json = await r.get("global_exchange_rates")
+            if rates_json:
+                import json
+                rates = json.loads(rates_json)
+                rate = rates.get(base_currency, 1.0)
+                total_stock_value = total_stock_value * rate
+                
+            symbols = {"EUR": "€", "GBP": "£", "JPY": "¥", "INR": "₹", "AUD": "A$", "CAD": "C$"}
+            currency_symbol = symbols.get(base_currency, base_currency + " ")
+
         return {
             "total_skus": total_skus,
-            "total_stock_value": float(total_stock_value or 0),
+            "total_stock_value": total_stock_value,
+            "currency_symbol": currency_symbol,
             "low_stock_count": low_stock_count,
             "pending_transfers": pending_transfers,
             "recent_transactions_24h": recent_tx_count,

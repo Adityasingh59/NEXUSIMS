@@ -152,6 +152,18 @@ class PurchaseOrderService:
 
         await db.flush()
         await db.refresh(po)
+
+        # Dispatch Webhook
+        from app.services.webhook_service import dispatch_webhook
+        payload = {
+            "po_id": str(po.id),
+            "supplier_name": po.supplier_name,
+            "warehouse_id": str(po.warehouse_id),
+            "status": po.status
+        }
+        event_type = f"PO_{po.status.upper()}"
+        await dispatch_webhook(db, tenant_id, event_type, payload)
+
         return po
 
     @staticmethod

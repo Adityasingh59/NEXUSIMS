@@ -95,6 +95,10 @@ class LedgerService:
         }
         await WorkflowEngine.evaluate(db, str(tenant_id), ev.event_type, payload)
 
+        # Block 10: Dispatch Webhooks
+        from app.services.webhook_service import dispatch_webhook
+        await dispatch_webhook(db, tenant_id, ev.event_type, payload)
+
         return ev
 
     @staticmethod

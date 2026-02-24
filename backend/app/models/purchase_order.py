@@ -29,6 +29,8 @@ class PurchaseOrder(Base):
     supplier_name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=POStatus.DRAFT.value)
     warehouse_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"))
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    exchange_rate: Mapped[Decimal] = mapped_column(Numeric(14, 6), nullable=False, default=Decimal("1.0"))
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")

@@ -12,8 +12,10 @@ import { SalesOrders } from './pages/SalesOrders';
 import { PurchaseOrders } from './pages/PurchaseOrders';
 import { Dashboard } from './pages/Dashboard';
 import { Reports } from './pages/Reports';
+import { Returns } from './pages/Returns';
 import { Scanner } from './pages/Scanner';
 import { ApiKeys } from './pages/ApiKeys';
+import { Webhooks } from './pages/Webhooks';
 import { Users } from './pages/Users';
 import Login from './pages/Login';
 import AcceptInvitation from './pages/AcceptInvitation';
@@ -57,6 +59,8 @@ export default function App() {
           <Route path="purchase-orders" element={<PurchaseOrders />} />
           <Route path="users" element={<Users />} />
           <Route path="api-keys" element={<ApiKeys />} />
+          <Route path="webhooks" element={<Webhooks />} />
+          <Route path="returns" element={<Returns />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -13,6 +13,8 @@ export function Skus() {
   const [attrs, setAttrs] = useState<Record<string, string>>({});
   const [reorderPoint, setReorderPoint] = useState('');
   const [unitCost, setUnitCost] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ processed: number; errors: string[] } | null>(null);
 
   const { data: typesData } = useQuery({
     queryKey: ['item-types'],
@@ -71,6 +73,24 @@ export function Skus() {
     }
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const r = await skusApi.importCSV(file);
+      setImportResult(r.data.data);
+      refetch();
+    } catch (err: any) {
+      alert('Import failed: ' + (err.response?.data?.detail || err.message));
+    } finally {
+      setImporting(false);
+      // reset file input
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="page skus">
       <h1>SKUs</h1>
@@ -87,6 +107,34 @@ export function Skus() {
       <button onClick={() => setShowForm(!showForm)}>
         {showForm ? 'Cancel' : '+ New SKU'}
       </button>
+
+      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+        <h3 style={{ marginBottom: '0.5rem' }}>Bulk Import SKUs (CSV)</h3>
+        <p style={{ fontSize: '0.9rem', color: '#8b949e', marginBottom: '0.5rem' }}>
+          CSV must contain: `sku_code`, `name`, `item_type_id`. Optional: `reorder_point`, `unit_cost`. Other columns are stored as attributes.
+        </p>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleImport}
+          disabled={importing}
+          style={{ padding: '0.5rem' }}
+        />
+        {importing && <span style={{ marginLeft: '1rem' }}>Importing...</span>}
+        {importResult && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '6px' }}>
+            <p style={{ color: '#56d364', fontWeight: 'bold' }}>Processed: {importResult.processed}</p>
+            {importResult.errors.length > 0 && (
+              <div style={{ color: '#f85149', marginTop: '0.5rem' }}>
+                <p>Errors:</p>
+                <ul style={{ maxHeight: '150px', overflowY: 'auto', paddingLeft: '1.5rem', fontSize: '0.9rem' }}>
+                  {importResult.errors.map((e, idx) => <li key={idx}>{e}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="card form">

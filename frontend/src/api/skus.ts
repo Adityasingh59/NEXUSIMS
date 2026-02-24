@@ -40,4 +40,11 @@ export const skusApi = {
     apiClient.put<ApiResponse<SKU>>(`/skus/${id}`, data),
   archive: (id: string, force?: boolean) =>
     apiClient.delete(`/skus/${id}`, { params: { force } }),
+  importCSV: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<{ data: { processed: number; errors: string[] } }>('/skus/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

@@ -25,4 +25,5 @@ __all__ = [
     "Webhook", "WebhookDelivery",
     "ModuleInstall", "ModuleAttributeType", "ModuleWorkflowExtension", "ModuleExtensionType",
     "SerialNumber", "SerialStatus",
+    "RMA", "RMALine", "RMAStatus",
 ]

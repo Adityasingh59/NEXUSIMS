@@ -1,7 +1,7 @@
-"""NEXUS IMS — SKU endpoints (Block 1.3). GET /skus, POST, GET/{id}, PUT, DELETE."""
 from uuid import UUID
+from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import CurrentUser, DbSession, get_db, require_auth
@@ -120,3 +120,69 @@ async def archive_sku(
     ok = await SKUService.archive_sku(db, id, user.tenant_id, force=force)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+@router.post("/import", response_model=ApiResponse[dict])
+async def import_skus_csv(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    user: CurrentUser = Depends(require_auth),
+):
+    """Bulk import SKUs from CSV. Requires sku_code, name, item_type_id columns."""
+    import csv
+    from io import StringIO
+    
+    content = await file.read()
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded")
+        
+    reader = csv.DictReader(StringIO(text))
+    if not reader.fieldnames:
+        raise HTTPException(status_code=400, detail="Empty or invalid CSV")
+        
+    created_count = 0
+    errors = []
+    
+    for row_num, row in enumerate(reader, start=2):
+        try:
+            sku_code = row.get("sku_code")
+            name = row.get("name")
+            item_type_id_str = row.get("item_type_id")
+            
+            if not all([sku_code, name, item_type_id_str]):
+                errors.append(f"Row {row_num}: Missing required fields (sku_code, name, item_type_id)")
+                continue
+
+            try:
+                item_type_id = UUID(item_type_id_str)
+            except ValueError:
+                errors.append(f"Row {row_num}: Invalid item_type_id UUID")
+                continue
+
+            # Parse optional fields
+            reorder_point = Decimal(row["reorder_point"]) if row.get("reorder_point") else None
+            unit_cost = Decimal(row["unit_cost"]) if row.get("unit_cost") else None
+            
+            # The rest of the columns are considered dynamic attributes!
+            known_cols = {"sku_code", "name", "item_type_id", "reorder_point", "unit_cost"}
+            attributes = {k: v for k, v in row.items() if k not in known_cols and v}
+
+            existing = await SKUService.get_by_code(db, user.tenant_id, sku_code)
+            if existing:
+                await SKUService.update_sku(
+                    db, existing.id, user.tenant_id, name=name, 
+                    attributes=attributes, reorder_point=reorder_point, 
+                    unit_cost=unit_cost
+                )
+            else:
+                await SKUService.create_sku(
+                    db, user.tenant_id, sku_code, name, item_type_id,
+                    attributes, reorder_point, unit_cost
+                )
+            created_count += 1
+        except Exception as e:
+            errors.append(f"Row {row_num}: {str(e)}")
+            
+    await db.commit()
+    return ApiResponse(data={"processed": created_count, "errors": errors})

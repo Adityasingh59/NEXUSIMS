@@ -40,6 +40,7 @@ class ScanReceiveRequest(BaseModel):
     warehouse_id: UUID
     quantity: Decimal
     notes: str | None = None
+    expiry_date: str | None = None
 
 
 class ScanPickRequest(BaseModel):
@@ -143,6 +144,11 @@ async def scan_receive(
             StockEventType.RECEIVE, body.quantity,
             actor_id=user.id, notes=body.notes,
         )
+        if body.expiry_date:
+            attrs = sku.attributes or {}
+            attrs["expiry_date"] = body.expiry_date
+            sku.attributes = attrs
+            db.add(sku)
         await db.commit()
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

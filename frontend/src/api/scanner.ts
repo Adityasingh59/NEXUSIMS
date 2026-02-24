@@ -24,8 +24,15 @@ export function scanLookup(barcode: string, warehouseId: string) {
     return api.post<{ data: ScanLookupResult }>('/scan/lookup', { barcode, warehouse_id: warehouseId }).then(r => r.data);
 }
 
-export function scanReceive(barcode: string, warehouseId: string, quantity: number, notes?: string) {
-    return api.post<{ data: ScanConfirmation }>('/scan/receive', { barcode, warehouse_id: warehouseId, quantity, notes }).then(r => r.data);
+export function scanReceive(barcode: string, warehouseId: string, quantity: number, notes?: string, expiryDate?: string, serialNumber?: string) {
+    return api.post<{ data: ScanConfirmation }>('/scan/receive', {
+        barcode,
+        warehouse_id: warehouseId,
+        quantity,
+        notes,
+        expiry_date: expiryDate,
+        serial_number: serialNumber
+    }).then(r => r.data);
 }
 
 export function scanPick(barcode: string, warehouseId: string, quantity = 1, notes?: string) {

@@ -25,6 +25,8 @@ class StockEventType(str, Enum):
     SHIP_OUT = "SHIP_OUT"
     RESERVE_OUT = "RESERVE_OUT"
     RESERVE_IN = "RESERVE_IN"
+    RETURN_QUARANTINE = "RETURN_QUARANTINE"
+    RETURN_TO_STOCK = "RETURN_TO_STOCK"
 
 
 class Warehouse(Base):

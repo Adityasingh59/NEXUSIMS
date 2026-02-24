@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { listWarehouses } from '../api/warehouses';
 import { scanLookup, scanReceive, scanPick, scanAdjust } from '../api/scanner';
 import type { ScanLookupResult } from '../api/scanner';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 
 type ScanMode = 'RECEIVE' | 'PICK' | 'ADJUST';
 
@@ -17,9 +18,30 @@ export function Scanner() {
     const [barcode, setBarcode] = useState('');
     const [quantity, setQuantity] = useState('1');
     const [reasonCode, setReasonCode] = useState('DAMAGE');
+    const [expiryDate, setExpiryDate] = useState('');
     const [lookupResult, setLookupResult] = useState<ScanLookupResult | null>(null);
     const [flash, setFlash] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [cameraMode, setCameraMode] = useState(false);
+
+    useEffect(() => {
+        if (cameraMode) {
+            const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false);
+            scanner.render(
+                (decodedText) => {
+                    setBarcode(decodedText);
+                    setCameraMode(false);
+                    scanner.clear();
+                },
+                (error) => {
+                    // ignore errors during scanning like "no barcode found"
+                }
+            );
+            return () => {
+                scanner.clear().catch(console.error);
+            };
+        }
+    }, [cameraMode]);
 
     const { data: warehouses } = useQuery({
         queryKey: ['warehouses'],
@@ -39,6 +61,7 @@ export function Scanner() {
                 setLookupResult(null);
                 setBarcode('');
                 setQuantity('1');
+                setExpiryDate('');
                 inputRef.current?.focus();
             }, 1200);
             return () => clearTimeout(t);
@@ -67,7 +90,7 @@ export function Scanner() {
             let result: any;
             const qty = parseFloat(quantity);
             if (mode === 'RECEIVE') {
-                result = await scanReceive(barcode.trim(), warehouseId, qty);
+                result = await scanReceive(barcode.trim(), warehouseId, qty, undefined, expiryDate || undefined);
             } else if (mode === 'PICK') {
                 result = await scanPick(barcode.trim(), warehouseId, qty);
             } else {
@@ -152,10 +175,17 @@ export function Scanner() {
                 </div>
 
                 {/* Scan input */}
-                <div className="scanner-input-area">
-                    <input ref={inputRef} className="scanner-input" placeholder="Scan barcode or enter SKU code"
-                        value={barcode} onChange={e => { setBarcode(e.target.value); if (lookupResult) setLookupResult(null); }}
-                        onKeyDown={handleKeyDown} disabled={isProcessing} autoFocus />
+                <div className="scanner-input-area" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input ref={inputRef} className="scanner-input" placeholder="Scan barcode or enter SKU code"
+                            value={barcode} onChange={e => { setBarcode(e.target.value); if (lookupResult) setLookupResult(null); }}
+                            onKeyDown={handleKeyDown} disabled={isProcessing || cameraMode} autoFocus style={{ flex: 1 }} />
+                        <button type="button" onClick={() => setCameraMode(!cameraMode)}
+                            style={{ padding: '0 1rem', borderRadius: '8px', background: cameraMode ? '#ef4444' : '#3b82f6', color: '#fff' }}>
+                            {cameraMode ? 'Close Camera' : '📷 Scan'}
+                        </button>
+                    </div>
+                    <div id="qr-reader" style={{ display: cameraMode ? 'block' : 'none', width: '100%', maxWidth: '400px', margin: '0 auto', background: '#fff', borderRadius: '8px', overflow: 'hidden' }}></div>
                 </div>
 
                 {/* Lookup result */}
@@ -194,6 +224,11 @@ export function Scanner() {
                                 style={{ width: '100%', marginTop: '0.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '0.5rem', borderRadius: '6px' }}>
                                 {REASON_CODES.map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
+                        )}
+                        {mode === 'RECEIVE' && (
+                            <input type="date" value={expiryDate} onChange={e => setExpiryDate(e.target.value)}
+                                placeholder="Expiry Date (optional)"
+                                style={{ width: '100%', marginTop: '0.5rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', color: '#fff', padding: '0.5rem', borderRadius: '6px' }} />
                         )}
                     </div>
                 )}

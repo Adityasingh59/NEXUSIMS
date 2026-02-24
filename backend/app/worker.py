@@ -30,7 +30,9 @@ celery_app.conf.update(
         "app.tasks", 
         "app.tasks.report_tasks",
         "app.tasks.workflow_tasks",
-        "app.tasks.webhook_tasks"
+        "app.tasks.webhook_tasks",
+        "app.tasks.replenishment_tasks",
+        "app.tasks.currency_tasks"
     ],
 )
 
@@ -39,5 +41,13 @@ celery_app.conf.beat_schedule = {
     "refresh-dashboard-cache-60s": {
         "task": "app.tasks.report_tasks.refresh_dashboard_cache",
         "schedule": 60.0,  # every 60 seconds
+    },
+    "auto-replenishment-daily": {
+        "task": "app.tasks.replenishment_tasks.generate_replenishment_pos",
+        "schedule": 86400.0,  # every 24 hours (for test/demo, could use crontab(minute=0, hour=0))
+    },
+    "fetch-exchange-rates-daily": {
+        "task": "app.tasks.currency_tasks.fetch_exchange_rates",
+        "schedule": 43200.0,  # every 12 hours
     },
 }
