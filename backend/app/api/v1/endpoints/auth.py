@@ -53,49 +53,60 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
-    """Authenticate with email/password. Returns access token. Sets refresh token in httpOnly cookie."""
-    try:
-        # Use SECURITY DEFINER function to bypass RLS for login
-        # RLS prevents nexus_app from seeing users until tenant_id is set, 
-        # but we need to find the user first to get the tenant_id.
-        result = await db.execute(
-            text("SELECT * FROM get_user_for_login(:email)").bindparams(email=form_data.username)
-        )
-        row = result.fetchone()
-        
-        if not row:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-            
-        # Manually map row to User object or just use fields directly
-        # Row has fields: id, tenant_id, email, hashed_password, role, etc.
-        # We need: id, tenant_id, email, hashed_password, role.
-        
-        # Verify password
-        if not verify_password(form_data.password, row.hashed_password):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    """
+    Authenticate with email/password.
+    RLS-safe version (temporarily disables tenant filter for lookup).
+    """
 
-        tenant_id = str(row.tenant_id)
-        access_token = create_access_token(
-            subject=str(row.id),
-            tenant_id=tenant_id,
-            email=row.email,
-            extra_claims={"role": row.role},
-        )
-        refresh_token = create_refresh_token(subject=str(row.id))
+    # IMPORTANT:
+    # Temporarily disable tenant filter for login lookup
+    # so we can find user before setting tenant_id.
+    await db.execute(text("SELECT set_config('app.tenant_id', '', true)"))
 
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh_token,
-            httponly=True,
-            secure=settings.ENVIRONMENT == "production",
-            samesite="lax",
-            max_age=settings.JWT_REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
+    result = await db.execute(
+        select(User).where(
+            User.email == form_data.username,
+            User.is_active == True
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
         )
 
-        return TokenResponse(
-            access_token=access_token,
-            expires_in=settings.JWT_ACCESS_TOKEN_TTL_MINUTES * 60,
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
         )
+
+    tenant_id = str(user.tenant_id)
+
+    access_token = create_access_token(
+        subject=str(user.id),
+        tenant_id=tenant_id,
+        email=user.email,
+        extra_claims={"role": user.role},
+    )
+
+    refresh_token = create_refresh_token(subject=str(user.id))
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=settings.ENVIRONMENT == "production",
+        samesite="lax",
+        max_age=settings.JWT_REFRESH_TOKEN_TTL_DAYS * 24 * 3600,
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        expires_in=settings.JWT_ACCESS_TOKEN_TTL_MINUTES * 60,
+    )
     except HTTPException:
         raise
     except Exception as e:
