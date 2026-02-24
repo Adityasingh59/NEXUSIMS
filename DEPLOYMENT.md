@@ -15,19 +15,26 @@ This guide provides step-by-step instructions to deploy the test branch on **Rai
 ## Backend Deployment on Railway
 
 ### Step 1: Push Code to GitHub
-The test branch is already pushed to GitHub. Verify it's available:
+The test branch is already pushed to GitHub with Railway-ready configurations:
 ```bash
 git branch -a
 # Should show: origin/test
 ```
+
+**New Railway-Ready Files:**
+- `railway.json` - Explicit Railway configuration
+- `start.sh` - Build and start script
+- `Procfile` - Service definitions
+- `docker-compose.prod.yml` - Production Docker setup
+- Updated `backend/Dockerfile` - Multi-stage production build
 
 ### Step 2: Create Railway Project
 1. Go to [railway.app](https://railway.app/) and log in
 2. Click **"New Project"** → **"Deploy from GitHub Repo"**
 3. Select your **NEXUSIMS** repository
 4. Select **test** branch
-5. Configure as a **Python** project
-6. Railway will auto-detect FastAPI
+5. Railway will automatically detect the `railway.json` configuration
+6. It will use the `Procfile` and `start.sh` for building and deploying
 
 ### Step 3: Configure Environment Variables in Railway
 
@@ -199,12 +206,59 @@ If issues occur:
 
 ---
 
-## Additional Resources
+## Docker & Railway Configuration Files
 
-- Railway Docs: https://docs.railway.app/
-- Vercel Docs: https://vercel.com/docs/
-- FastAPI Deployment: https://fastapi.tiangolo.com/deployment/
-- Vite Guide: https://vitejs.dev/guide/
+### `railway.json`
+Explicit configuration for Railway:
+- Uses `Dockerfile` as the builder
+- Sets context to `./backend` directory
+- Configures start command to use `start.sh`
+- Enables automated restarts on failure
+
+### `start.sh`
+Build and startup script:
+- Installs Python dependencies
+- Runs database migrations automatically
+- Starts FastAPI with uvicorn
+- Respects `PORT` environment variable
+
+### `Procfile`
+Defines services for Railway:
+- `web`: Main FastAPI application
+- `worker`: Celery worker for async tasks
+- `beat`: Celery beat scheduler
+
+### `docker-compose.prod.yml`
+Production Docker Compose setup:
+- Optimized for production environments
+- Health checks on all services
+- Automatic restart policies
+- Uses environment variables from `.env.prod`
+
+### Updated `backend/Dockerfile`
+Production-ready improvements:
+- Multi-stage build for smaller image size
+- Health check endpoint
+- 4 workers by default (configurable)
+- Proper signal handling
+
+---
+
+## Local Testing with Docker (Optional)
+
+To test the production build locally:
+
+```bash
+# Build and run with production compose file
+docker-compose -f docker-compose.prod.yml up --build
+
+# Or just build the backend image
+docker build -t nexus-api:test ./backend
+docker run -p 8000:8000 \
+  -e DATABASE_URL="postgresql+asyncpg://..." \
+  -e REDIS_URL="redis://..." \
+  nexus-api:test
+```
 
 ---
 
