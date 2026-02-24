@@ -15,7 +15,10 @@ if config.config_file_name is not None:
 
 settings = get_settings()
 # Use nexus_admin for migrations (DDL); nexus_app for app (restricted)
-migration_url = getattr(settings, "MIGRATION_DATABASE_URL", None) or settings.DATABASE_URL.replace("nexus_app", "nexus_admin")
+migration_url = getattr(settings, "MIGRATION_DATABASE_URL", None) or settings.get_async_database_url().replace("nexus_app", "nexus_admin")
+# Ensure async protocol
+if "postgresql://" in migration_url and "postgresql+asyncpg://" not in migration_url:
+    migration_url = migration_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 url = migration_url
 config.set_main_option("sqlalchemy.url", url)
 

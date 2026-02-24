@@ -35,6 +35,14 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
+    def get_async_database_url(self) -> str:
+        """Convert DATABASE_URL to async protocol if needed (for Railway compatibility)."""
+        url = self.DATABASE_URL
+        # Railway provides postgresql:// but we need postgresql+asyncpg://
+        if url and "postgresql://" in url and "postgresql+asyncpg://" not in url:
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
 
 @lru_cache
 def get_settings() -> Settings:

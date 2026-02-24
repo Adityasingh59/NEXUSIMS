@@ -9,8 +9,11 @@ from app.config import get_settings
 
 settings = get_settings()
 
+# Get async-compatible DATABASE_URL (converts postgresql:// to postgresql+asyncpg://)
+async_database_url = settings.get_async_database_url()
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    async_database_url,
     pool_pre_ping=True,
     pool_size=5,
     max_overflow=10,
