@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = False
 
-    # Database (nexus_app for app; nexus_admin for migrations)
+    # Database
     DATABASE_URL: str
 
     # Redis
@@ -32,13 +32,14 @@ class Settings(BaseSettings):
     JWT_ACCESS_TOKEN_TTL_MINUTES: int = 15
     JWT_REFRESH_TOKEN_TTL_DAYS: int = 7
 
-    # CORS
-    CORS_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
+    # ✅ CORS (FIXED FOR PYDANTIC V2)
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+    ]
 
-CORS_ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+    # ✅ Allow ALL Vercel preview deployments
+    CORS_ALLOW_ORIGIN_REGEX: str = r"https://.*\.vercel\.app"
 
 
 @lru_cache
