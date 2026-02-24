@@ -14,11 +14,10 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 settings = get_settings()
-# Use nexus_admin for migrations (DDL); nexus_app for app (restricted)
 url = settings.DATABASE_URL.replace(
     "postgresql://", "postgresql+asyncpg://"
 )
-
+config.set_main_option("sqlalchemy.url", url)
 from app.db.base import Base
 import app.models  # Ensure all models are loaded
 
