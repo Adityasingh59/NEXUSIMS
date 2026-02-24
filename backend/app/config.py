@@ -33,11 +33,12 @@ class Settings(BaseSettings):
     JWT_REFRESH_TOKEN_TTL_DAYS: int = 7
 
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://nexusims-beng618s1-adityasingh59s-projects.vercel.app",
 ]
+
+CORS_ALLOW_ORIGIN_REGEX = r"https://.*\.vercel\.app"
 
 
 @lru_cache
