@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
     "http://localhost:3000",
     "http://localhost:5173",
-    "https://nexusims.vercel.app",
+    "https://nexusims-beng618s1-adityasingh59s-projects.vercel.app",
 ]
 
 
