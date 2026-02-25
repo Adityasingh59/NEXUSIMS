@@ -11,8 +11,12 @@ settings = get_settings()
 
 # Get async-compatible DATABASE_URL (converts postgresql:// to postgresql+asyncpg://)
 async_database_url = settings.get_async_database_url()
-print("RAW DATABASE_URL:", settings.DATABASE_URL)
-print("ASYNC DATABASE_URL:", async_database_url)
+
+print("======== DB DEBUG ========")
+print("RAW:", settings.DATABASE_URL)
+print("ASYNC:", async_database_url)
+print("===========================")
+
 engine = create_async_engine(
     async_database_url,
     pool_pre_ping=True,
