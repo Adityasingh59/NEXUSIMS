@@ -3,8 +3,8 @@
 Revision ID: 0003
 Revises: 0002
 Create Date: 2026-02-18
-
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -18,7 +18,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # event_type enum for stock_ledger (idempotent)
+    # ---------------------------------------------------
+    # ENUM: stock_event_type (idempotent creation)
+    # ---------------------------------------------------
     op.execute("""
         DO $$ BEGIN
             CREATE TYPE stock_event_type AS ENUM (
@@ -30,7 +32,9 @@ def upgrade() -> None:
         END $$;
     """)
 
-    # warehouses table (minimal for Block 2; Block 3 adds locations, etc.)
+    # ---------------------------------------------------
+    # TABLE: warehouses
+    # ---------------------------------------------------
     op.create_table(
         "warehouses",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -43,10 +47,13 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )
+
     op.create_index("ix_warehouses_tenant_id", "warehouses", ["tenant_id"], unique=False)
     op.create_unique_constraint("uq_warehouses_tenant_code", "warehouses", ["tenant_id", "code"])
 
-    # stock_ledger table (append-only, no updated_at)
+    # ---------------------------------------------------
+    # TABLE: stock_ledger (append-only)
+    # ---------------------------------------------------
     op.create_table(
         "stock_ledger",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -62,12 +69,20 @@ def upgrade() -> None:
         sa.Column("reason_code", sa.String(50), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
     )
-    op.create_index("ix_stock_ledger_tenant_sku_warehouse", "stock_ledger", ["tenant_id", "sku_id", "warehouse_id"], unique=False)
+
+    op.create_index(
+        "ix_stock_ledger_tenant_sku_warehouse",
+        "stock_ledger",
+        ["tenant_id", "sku_id", "warehouse_id"],
+        unique=False,
+    )
     op.create_index("ix_stock_ledger_reference_id", "stock_ledger", ["reference_id"], unique=False)
     op.create_index("ix_stock_ledger_created_at", "stock_ledger", ["created_at"], unique=False)
     op.create_index("ix_stock_ledger_warehouse_id", "stock_ledger", ["warehouse_id"], unique=False)
 
-    # Trigger: prevent negative stock (raises before INSERT if balance would go below 0)
+    # ---------------------------------------------------
+    # TRIGGER: prevent negative stock
+    # ---------------------------------------------------
     op.execute("""
         CREATE OR REPLACE FUNCTION check_negative_stock()
         RETURNS TRIGGER AS $$
@@ -77,43 +92,71 @@ def upgrade() -> None:
             SELECT COALESCE(SUM(quantity_delta), 0) + NEW.quantity_delta
             INTO new_balance
             FROM stock_ledger
-            WHERE sku_id = NEW.sku_id AND warehouse_id = NEW.warehouse_id;
+            WHERE sku_id = NEW.sku_id
+              AND warehouse_id = NEW.warehouse_id;
+
             IF new_balance < 0 THEN
-                RAISE EXCEPTION 'Negative stock not allowed: sku_id=%, warehouse_id=%, balance would be %',
+                RAISE EXCEPTION
+                    'Negative stock not allowed: sku_id=%, warehouse_id=%, balance would be %',
                     NEW.sku_id, NEW.warehouse_id, new_balance;
             END IF;
+
             RETURN NEW;
         END;
         $$ LANGUAGE plpgsql;
     """)
+
     op.execute("""
         CREATE TRIGGER trg_check_negative_stock
         BEFORE INSERT ON stock_ledger
-        FOR EACH ROW EXECUTE FUNCTION check_negative_stock();
+        FOR EACH ROW
+        EXECUTE FUNCTION check_negative_stock();
     """)
 
-    # REVOKE UPDATE, DELETE on stock_ledger from nexus_app (INSERT-only)
-    op.execute("REVOKE UPDATE ON stock_ledger FROM nexus_app")
-    op.execute("REVOKE DELETE ON stock_ledger FROM nexus_app")
-    op.execute("GRANT INSERT, SELECT ON stock_ledger TO nexus_app")
+    # ---------------------------------------------------
+    # ROLE-BASED PERMISSIONS (Railway-safe)
+    # ---------------------------------------------------
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_roles WHERE rolname = 'nexus_app'
+            ) THEN
+                REVOKE UPDATE ON stock_ledger FROM nexus_app;
+                REVOKE DELETE ON stock_ledger FROM nexus_app;
+                GRANT INSERT, SELECT ON stock_ledger TO nexus_app;
+            END IF;
+        END $$;
+    """)
 
-    # RLS on warehouses and stock_ledger
+    # ---------------------------------------------------
+    # ROW LEVEL SECURITY
+    # ---------------------------------------------------
     op.execute("ALTER TABLE warehouses ENABLE ROW LEVEL SECURITY")
-    op.execute(
-        "CREATE POLICY warehouses_tenant_policy ON warehouses "
-        "USING (tenant_id = nullif(trim(current_setting('app.tenant_id', true)), '')::uuid)"
-    )
+    op.execute("""
+        CREATE POLICY warehouses_tenant_policy
+        ON warehouses
+        USING (
+            tenant_id =
+            nullif(trim(current_setting('app.tenant_id', true)), '')::uuid
+        )
+    """)
 
     op.execute("ALTER TABLE stock_ledger ENABLE ROW LEVEL SECURITY")
-    op.execute(
-        "CREATE POLICY stock_ledger_tenant_policy ON stock_ledger "
-        "USING (tenant_id = nullif(trim(current_setting('app.tenant_id', true)), '')::uuid)"
-    )
+    op.execute("""
+        CREATE POLICY stock_ledger_tenant_policy
+        ON stock_ledger
+        USING (
+            tenant_id =
+            nullif(trim(current_setting('app.tenant_id', true)), '')::uuid
+        )
+    """)
 
 
 def downgrade() -> None:
     op.execute("DROP POLICY IF EXISTS stock_ledger_tenant_policy ON stock_ledger")
     op.execute("ALTER TABLE stock_ledger DISABLE ROW LEVEL SECURITY")
+
     op.execute("DROP POLICY IF EXISTS warehouses_tenant_policy ON warehouses")
     op.execute("ALTER TABLE warehouses DISABLE ROW LEVEL SECURITY")
 
