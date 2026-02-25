@@ -1,5 +1,7 @@
 # NEXUS IMS — Backend (FastAPI)
 # Multi-stage build for optimized production image
+
+ARG CACHE_BREAK=1
 FROM python:3.12-slim as builder
 
 WORKDIR /app
