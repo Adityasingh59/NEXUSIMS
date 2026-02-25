@@ -3,6 +3,7 @@ from collections.abc import AsyncGenerator
 
 from fastapi import Request
 from sqlalchemy import text
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -13,31 +14,25 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# ===============================
-# FORCE ASYNC DRIVER FOR RAILWAY
-# ===============================
+# ==========================
+# FORCE ASYNC DRIVER SAFELY
+# ==========================
 
 raw_url = settings.DATABASE_URL
-
-print("======== DB DEBUG ========")
 print("RAW DATABASE_URL:", raw_url)
 
-# Handle Railway postgres:// format
-if raw_url.startswith("postgres://"):
-    raw_url = raw_url.replace("postgres://", "postgresql://", 1)
+url_obj = make_url(raw_url)
 
-# Force async driver
-if raw_url.startswith("postgresql://"):
-    raw_url = raw_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+# Force asyncpg driver regardless of what Railway injects
+url_obj = url_obj.set(drivername="postgresql+asyncpg")
 
-print("FINAL ASYNC DATABASE_URL:", raw_url)
-print("===========================")
+final_url = str(url_obj)
+
+print("FINAL ASYNC DATABASE_URL:", final_url)
 
 engine = create_async_engine(
-    raw_url,
+    final_url,
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
     echo=settings.DEBUG,
 )
 
@@ -49,10 +44,6 @@ async_session_maker = async_sessionmaker(
 
 
 async def get_db(request: Request) -> AsyncGenerator[AsyncSession, None]:
-    """
-    Dependency: yield async DB session.
-    Sets app.tenant_id for RLS when request has tenant context.
-    """
     tenant_id = getattr(request.state, "tenant_id", None)
 
     async with async_session_maker() as session:
