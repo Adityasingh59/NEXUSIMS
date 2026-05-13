@@ -111,44 +111,51 @@ class LedgerService:
         page: int = 1,
         page_size: int = 50,
     ) -> tuple[list[tuple[StockLedger, Decimal]], int]:
-        """Paginated transaction history with running balance."""
-        q = select(StockLedger).where(StockLedger.tenant_id == tenant_id)
-        count_q = select(func.count(StockLedger.id)).where(StockLedger.tenant_id == tenant_id)
+        """Paginated transaction history with running balance computed via window function (single query)."""
+        # Build filter conditions shared by count + data queries
+        filters = [StockLedger.tenant_id == tenant_id]
         if sku_id:
-            q = q.where(StockLedger.sku_id == sku_id)
-            count_q = count_q.where(StockLedger.sku_id == sku_id)
+            filters.append(StockLedger.sku_id == sku_id)
         if warehouse_id:
-            q = q.where(StockLedger.warehouse_id == warehouse_id)
-            count_q = count_q.where(StockLedger.warehouse_id == warehouse_id)
+            filters.append(StockLedger.warehouse_id == warehouse_id)
         if event_type:
-            q = q.where(StockLedger.event_type == event_type)
-            count_q = count_q.where(StockLedger.event_type == event_type)
+            filters.append(StockLedger.event_type == event_type)
         if actor_id:
-            q = q.where(StockLedger.actor_id == actor_id)
-            count_q = count_q.where(StockLedger.actor_id == actor_id)
+            filters.append(StockLedger.actor_id == actor_id)
         if date_from:
-            q = q.where(StockLedger.created_at >= date_from)
-            count_q = count_q.where(StockLedger.created_at >= date_from)
+            filters.append(StockLedger.created_at >= date_from)
         if date_to:
-            q = q.where(StockLedger.created_at <= date_to)
-            count_q = count_q.where(StockLedger.created_at <= date_to)
+            filters.append(StockLedger.created_at <= date_to)
 
-        total = (await db.execute(count_q)).scalar_one()
-        q = q.order_by(StockLedger.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
-        result = await db.execute(q)
-        rows = list(result.scalars().all())
+        total = (await db.execute(
+            select(func.count(StockLedger.id)).where(*filters)
+        )).scalar_one()
 
-        # Running balance per row (simplified: sum up to this row for same sku+warehouse)
-        out: list[tuple[StockLedger, Decimal]] = []
-        for r in rows:
-            bal_result = await db.execute(
-                select(func.coalesce(func.sum(StockLedger.quantity_delta), 0)).where(
-                    StockLedger.sku_id == r.sku_id,
-                    StockLedger.warehouse_id == r.warehouse_id,
-                    StockLedger.created_at <= r.created_at,
-                )
+        # Single query: window function computes cumulative balance per sku+warehouse
+        running_balance = (
+            func.sum(StockLedger.quantity_delta)
+            .over(
+                partition_by=[StockLedger.sku_id, StockLedger.warehouse_id],
+                order_by=StockLedger.created_at.asc(),
+                rows=(None, 0),  # UNBOUNDED PRECEDING to CURRENT ROW
             )
-            bal = bal_result.scalar_one()
-            out.append((r, Decimal(str(bal))))
+            .label("running_balance")
+        )
+
+        data_q = (
+            select(StockLedger, running_balance)
+            .where(*filters)
+            .order_by(StockLedger.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+
+        result = await db.execute(data_q)
+        rows = result.all()
+
+        out: list[tuple[StockLedger, Decimal]] = [
+            (row.StockLedger, Decimal(str(row.running_balance or 0)))
+            for row in rows
+        ]
 
         return out, total

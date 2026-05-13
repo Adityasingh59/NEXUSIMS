@@ -2,7 +2,6 @@
 NEXUS IMS — FastAPI ASGI Entry Point
 """
 from contextlib import asynccontextmanager
-# Trigger reload
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +16,15 @@ from app.api.v1.router import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan — Redis pool, startup/shutdown."""
-    # Startup: init Redis connection pool (used in lifespan or dependency)
+    """Application lifespan — verify Redis on startup."""
+    from app.core.redis import get_redis
+    try:
+        r = await get_redis()
+        await r.ping()
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Redis not reachable at startup: %s", exc)
     yield
-    # Shutdown: close connections
-    pass
 
 
 app = FastAPI(
@@ -33,15 +36,13 @@ app = FastAPI(
     openapi_url="/api/v1/openapi.json",
     lifespan=lifespan,
 )
-# app.add_middleware(RateLimitMiddleware)
+
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(JWTAuthMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=settings.CORS_ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,5 +57,27 @@ app.include_router(ws_scanner_router)
 
 @app.get("/health")
 async def health():
-    """Health check for load balancers and Docker."""
-    return {"status": "ok", "service": "nexus-ims"}
+    """Health check — verifies API, DB, and Redis connectivity."""
+    from app.db.session import async_session_maker
+    from sqlalchemy import text
+
+    status = {"api": "ok", "db": "ok", "redis": "ok"}
+    http_status = 200
+
+    try:
+        async with async_session_maker() as db:
+            await db.execute(text("SELECT 1"))
+    except Exception as exc:
+        status["db"] = f"error: {exc}"
+        http_status = 503
+
+    try:
+        from app.core.redis import get_redis
+        r = await get_redis()
+        await r.ping()
+    except Exception as exc:
+        status["redis"] = f"error: {exc}"
+        http_status = 503
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=http_status, content={"status": status, "service": "nexus-ims"})

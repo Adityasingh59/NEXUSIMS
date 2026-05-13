@@ -15,6 +15,10 @@ import { Reports } from './pages/Reports';
 import { Scanner } from './pages/Scanner';
 import { ApiKeys } from './pages/ApiKeys';
 import { Users } from './pages/Users';
+import { Workflows } from './pages/Workflows';
+import { Webhooks } from './pages/Webhooks';
+import { SerialNumbers } from './pages/SerialNumbers';
+import { ExpiryTracker } from './pages/ExpiryTracker';
 import Login from './pages/Login';
 import AcceptInvitation from './pages/AcceptInvitation';
 import { useAuthStore } from './stores/useAuthStore';
@@ -55,6 +59,12 @@ export default function App() {
           <Route path="assembly-orders" element={<AssemblyOrders />} />
           <Route path="sales-orders" element={<SalesOrders />} />
           <Route path="purchase-orders" element={<PurchaseOrders />} />
+
+          <Route path="workflows" element={<Workflows />} />
+          <Route path="webhooks" element={<Webhooks />} />
+          <Route path="serial-numbers" element={<SerialNumbers />} />
+          <Route path="expiry-tracker" element={<ExpiryTracker />} />
+
           <Route path="users" element={<Users />} />
           <Route path="api-keys" element={<ApiKeys />} />
         </Route>

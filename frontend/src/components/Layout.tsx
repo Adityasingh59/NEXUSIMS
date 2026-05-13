@@ -30,6 +30,18 @@ const NAV = [
     ]
   },
   {
+    section: 'Automation', items: [
+      { to: '/workflows', icon: '⟳', label: 'Workflows' },
+      { to: '/webhooks', icon: '⊹', label: 'Webhooks' },
+    ]
+  },
+  {
+    section: 'Modules', items: [
+      { to: '/serial-numbers', icon: '⊕', label: 'Serial Numbers' },
+      { to: '/expiry-tracker', icon: '⏱', label: 'Expiry Tracker' },
+    ]
+  },
+  {
     section: 'Settings', items: [
       { to: '/users', icon: '◉', label: 'Users' },
       { to: '/api-keys', icon: '⊙', label: 'API Keys' },
@@ -44,10 +56,9 @@ export function Layout() {
   const logout = useAuthStore((s) => s.logout);
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses'],
-    queryFn: () => warehousesApi.list().then((r: any) => {
-      // Handle both cases: r is Axios response or raw ApiResponse
-      const responseBody = r.data || r;
-      return Array.isArray(responseBody.data) ? responseBody.data : (Array.isArray(responseBody) ? responseBody : []);
+    queryFn: () => warehousesApi.list().then((r) => {
+      const responseBody = (r.data || r) as { data?: unknown[] };
+      return Array.isArray(responseBody.data) ? responseBody.data : [];
     }),
   });
 
@@ -98,9 +109,10 @@ export function Layout() {
             onChange={e => setWarehouse(e.target.value || null)}
           >
             <option value="">All Warehouses</option>
-            {(warehouses || []).map((w: any) => (
-              <option key={w.id} value={w.id}>{w.code} — {w.name}</option>
-            ))}
+            {(warehouses || []).map((w: unknown) => {
+              const wh = w as { id: string; code: string; name: string };
+              return <option key={wh.id} value={wh.id}>{wh.code} — {wh.name}</option>;
+            })}
           </select>
           <button className="btn-logout" onClick={() => { logout(); navigate('/login'); }}>
             ⏻ Logout

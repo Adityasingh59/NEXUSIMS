@@ -871,6 +871,153 @@
   }
 }
 
+/* ────────────── Toast Notifications ────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 260px;
+  max-width: 400px;
+  box-shadow: var(--shadow-md);
+  pointer-events: all;
+  backdrop-filter: blur(8px);
+}
+
+.toast-success {
+  background: rgba(0, 196, 140, 0.12);
+  border-color: rgba(0, 196, 140, 0.4);
+  color: var(--color-green);
+}
+
+.toast-error {
+  background: rgba(255, 71, 87, 0.12);
+  border-color: rgba(255, 71, 87, 0.4);
+  color: var(--color-red);
+}
+
+.toast-warning {
+  background: rgba(245, 166, 35, 0.12);
+  border-color: rgba(245, 166, 35, 0.4);
+  color: var(--color-amber);
+}
+
+.toast-info {
+  background: rgba(14, 167, 232, 0.12);
+  border-color: rgba(14, 167, 232, 0.4);
+  color: var(--color-blue);
+}
+
+.toast-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.toast-message {
+  flex: 1;
+  color: var(--color-white);
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: currentColor;
+  padding: 0;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none !important;
+  min-width: unset;
+  line-height: 1;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* ────────────── Modal ────────────── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-edge-2);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+  animation: fadeScaleIn var(--transition-bounce) forwards;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-edge);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--color-edge-2);
+  color: var(--color-mist);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+.modal-close:hover {
+  background: var(--color-surface-2);
+  transform: none;
+  box-shadow: none;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-edge);
+  justify-content: flex-end;
+}
+
 /* ────────────── Login Page ────────────── */
 .login-page {
   display: flex;
